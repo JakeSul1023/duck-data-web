@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Duck Data</title>
+  <style>
+    /* Basic reset & typography */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color:rgb(255, 255, 255); 
+      color: #333;
+      line-height: 1.5;
+    }
+
+    /* Hero section with a gradient background */
+    .hero {
+      min-height: 400px;
+      background: linear-gradient(
+        135deg,
+rgb(238, 186, 83) 0%,
+rgb(251, 222, 165) 100%
+      );
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2em;
+      color: #fff;
+    }
+    .hero h1 {
+      font-size: 3em;
+      margin-bottom: 0.3em;
+      font-weight: 700;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .hero p {
+      font-size: 1.2em;
+      max-width: 700px;
+      margin: 0 auto;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* Main content area */
+    .content {
+      max-width: 960px;
+      margin: 2em auto;
+      padding: 0 1em;
+    }
+    .content h2 {
+      color:rgb(20, 113, 9);
+      margin-bottom: 0.5em;
+    }
+
+    .content p {
+      margin-bottom: 1em;
+    }
+
+    .iframe-container {
+      margin-top: 1.5em;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .iframe-container iframe {
+      display: block;
+      width: 100%;
+      height: 500px; 
+      border: none;
+    }
+
+    /* Footer */
+    footer {
+      background:rgb(238, 186, 83); /* A darker navy/blue from the palette */
+      color: #fff;
+      text-align: center;
+      padding: 1em 0;
+      margin-top: 2em;
+    }
+    footer p {
+      margin: 0;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero / Banner Section -->
+  <section class="hero">
+    <h1>Duck Data</h1>
+    <p>
+      Advanced Migration Analysis Tool <br/>
+      Predicts waterfowl movements in real-time
+    </p>
+  </section>
+
+  <!-- Main Content -->
+  <div class="content">
+    <h2>Welcome to Duck Data</h2>
+
+    <!-- Embedded Map (iframe) -->
+    <div class="iframe-container">
+      <iframe
+        src="https://jakesul1023.github.io/DuckData-WebApp/"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 Duck Data. All Rights Reserved.</p>
+  </footer>
+
+</body>
+</html>
