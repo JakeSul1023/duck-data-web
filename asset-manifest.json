@@ -1,0 +1,12 @@
+{
+  "files": {
+    "main.css": "/duck-data-web/static/css/main.03d83894.css",
+    "main.js": "/duck-data-web/static/js/main.8b1acead.js",
+    "static/js/206.e27f3084.chunk.js": "/duck-data-web/static/js/206.e27f3084.chunk.js",
+    "index.html": "/duck-data-web/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.03d83894.css",
+    "static/js/main.8b1acead.js"
+  ]
+}
