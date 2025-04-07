@@ -1,6 +1,6 @@
 import React from "react";
 import DuckMapFunction from "./components/DuckMapFunction"; 
-import "./App.css"; // or any other global styles
+import "./App.css";
 
 function App() {
   return (
@@ -17,7 +17,6 @@ function App() {
       {/* Main Content */}
       <div className="content">
         <h2>Welcome to Duck Data</h2>
-        {/* Render your React map component directly */}
         <DuckMapFunction />
       </div>
 
