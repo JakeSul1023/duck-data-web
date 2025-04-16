@@ -1,72 +1,77 @@
+/* duck-data-webpage/src/App.css */
+
+body {
+  margin: 0;
+  font-family: 'Lato', 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #e0c08a; /* Tan Background */
+  color: #4A4A4A; /* Darker Gray Text (Readability) */
+  line-height: 1.6;
+}
+
 .App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  width: 100%;
+  padding-top: 60px; /* Match navbarHeight */
 }
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Hero Section */
-.hero {
-  min-height: 100px; 
-  background: linear-gradient(
-    135deg,
-    rgb(238, 186, 83) 0%,
-    rgb(251, 222, 165) 100%
-  );
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 0em;
-  color: #ffffff;
-}
-
-/* Main Content */
 .content {
-  max-width: 1000px; 
-  margin: 2em auto;
-  padding: 1em;
+  padding: 1em 2em 2em 2em;
+  background-color: #f0e0c0; /* Lighter Tan Content Area */
+  color: #4A4A4A; /* Darker Gray Text */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  flex-grow: 1;
+  margin-top: 0;
+  margin-left: 1em;
+  margin-right: 1em;
+  margin-bottom: 1em;
 }
 
-/* Footer */
 footer {
-  background: rgb(238, 186, 83);
-  color: #ffffff;
+  background: #c0a07a; /* Darker Tan Footer */
+  color: #8B4513; /* Khaki Text (Adjust) */
   text-align: center;
-  padding: .1em 0;
-  margin-top: 0em;
+  padding: 1.5em 0;
+  width: 100%;
+  box-shadow: 0 -3px 6px rgba(0, 0, 0, 0.25);
 }
 
+footer p {
+  margin: 0;
+  font-size: 0.95em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Merriweather', serif;
+  color: #A0522D; /* Darker Forest Green Headings */
+  margin-top: 1.2em;
+  margin-bottom: 0.6em;
+  font-weight: bold;
+}
+h1 { font-size: 2.8em; line-height: 1.2; }
+h2 { font-size: 2.2em; line-height: 1.3; }
+h3 { font-size: 1.7em; line-height: 1.4; }
+
+p {
+  font-size: 1.05em;
+  margin-bottom: 1.2em;
+  color: #5E5E5E; /* Even Darker Gray for paragraphs */
+}
+
+a {
+  color: #8B4513; /* Darker Forest Green Links */
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+  font-weight: bold;
+}
+
+a:hover {
+  color: #A0522D; /* Slightly lighter Forest Green */
+  text-decoration: underline;
+}
