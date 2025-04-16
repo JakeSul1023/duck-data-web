@@ -11,7 +11,7 @@ def run_ml_model():
     return True
 
 def check_predictions_file():
-    return os.path.exists("DUCK PREDICTION FILE.csv")
+    return os.path.exists("DUCK PREDICTIONS.csv")
 
 def git_push():
     try:

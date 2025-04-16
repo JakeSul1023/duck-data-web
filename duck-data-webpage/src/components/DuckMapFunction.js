@@ -1,9 +1,19 @@
-//TANIA AND BREANNA MAP
+// DuckMigrationMap.jsx
 
 import React, { useState, useEffect, useMemo } from "react";
 import { DeckGL } from "@deck.gl/react";
 import { TileLayer } from "@deck.gl/geo-layers";
-import { Slider, Typography, Box, Button, TextField } from "@mui/material";
+import {
+  Slider,
+  Typography,
+  Box,
+  Button,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel
+} from "@mui/material";
 import { HeatmapLayer } from "@deck.gl/aggregation-layers";
 import { ScatterplotLayer, BitmapLayer, TextLayer } from "@deck.gl/layers";
 
@@ -14,8 +24,18 @@ function parseDateTime(ts) {
 }
 
 function formatDate(dateObj) {
-  const opts = { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" };
+  const opts = { weekday: "short", month: "short", day: "numeric", hour: "2-digit" };
   return dateObj.toLocaleDateString("en-US", opts);
+}
+
+// Helper to format just the day (for the day dropdown)
+function formatDay(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function interpolateLatLon(lat1, lon1, lat2, lon2, fraction) {
@@ -35,7 +55,7 @@ const INITIAL_VIEW = {
   longitude: -89.42,
   zoom: 5,
   minZoom: 3,
-  maxZoom: 15,
+  maxZoom: 7,
   pitch: 0,
   bearing: 0,
 };
@@ -66,86 +86,104 @@ export default function DuckMigrationMap() {
   const [viewState, setViewState] = useState(INITIAL_VIEW);
   const [cityInput, setCityInput] = useState("");
 
+  // which day is selected? (null means "All Days")
+  const [selectedDay, setSelectedDay] = useState(null);
+
   // Group by duck ID
   const duckMap = useMemo(() => {
     const map = {};
     for (const row of duckForecasts) {
-      if (!map[row.duckId]) map[row.duckId] = [];
+      if (!map[row.duckId]) {
+        map[row.duckId] = [];
+      }
       map[row.duckId].push(row);
     }
-    Object.keys(map).forEach(dId => map[dId].sort((a, b) => a.startTime - b.startTime));
+    Object.keys(map).forEach(dId => {
+      map[dId].sort((a, b) => a.startTime - b.startTime);
+    });
     return map;
   }, [duckForecasts]);
 
-  // Auto-play effect
-  useEffect(() => {
-    let animationFrame;
-    if (isPlaying && uniqueTimes.length > 0) {
-      const advanceTime = () => {
-        setTimeIndex(prev => {
-          const next = prev + 1;
-          return next >= uniqueTimes.length ? 0 : next;
-        });
-        animationFrame = requestAnimationFrame(advanceTime);
-      };
-      animationFrame = requestAnimationFrame(advanceTime);
-    }
-    return () => {
-      if (animationFrame) cancelAnimationFrame(animationFrame);
-    };
-  }, [isPlaying, uniqueTimes.length]);
-
-  // Fetch CSV
+  // Load data (HOURLY)
   useEffect(() => {
     setIsLoading(true);
-    fetch(`${process.env.PUBLIC_URL}/duck_migration_extended_forecasts.csv`)
+
+    fetch(`${process.env.PUBLIC_URL}/GNN_prediction_OneWeek(Raw).csv`)
       .then(response => {
-        if (!response.ok)
+        if (!response.ok) {
           throw new Error(`Failed to fetch CSV data: ${response.status} ${response.statusText}`);
+        }
         return response.text();
       })
       .then(csvData => {
         const lines = csvData.trim().split("\n");
-        const header = lines[0].split(",");
-        const duckIdIdx = header.indexOf("duck_id");
-        const baseTimeIdx = header.indexOf("base_timestamp");
-        const forecastTimeIdx = header.indexOf("forecast_timestamp");
-        const startLatIdx = header.indexOf("start_lat");
-        const startLonIdx = header.indexOf("start_lon");
-        const forecastLatIdx = header.indexOf("forecast_lat");
-        const forecastLonIdx = header.indexOf("forecast_lon");
-        if ([duckIdIdx, baseTimeIdx, forecastTimeIdx, startLatIdx, startLonIdx, forecastLatIdx, forecastLonIdx].includes(-1)) {
-          throw new Error("CSV is missing required columns");
-        }
         const parsedData = [];
-        const timesSet = new Set();
+
         for (let i = 1; i < lines.length; i++) {
           const row = lines[i].trim();
           if (!row) continue;
+
           const cols = row.split(",");
-          const duckId = cols[duckIdIdx];
-          const baseTimeStr = cols[baseTimeIdx];
-          const forecastTimeStr = cols[forecastTimeIdx];
-          const startLat = cleanValue(cols[startLatIdx]);
-          const startLon = cleanValue(cols[startLonIdx]);
-          const forecastLat = cleanValue(cols[forecastLatIdx]);
-          const forecastLon = cleanValue(cols[forecastLonIdx]);
-          const startTime = parseDateTime(baseTimeStr);
-          const forecastTime = parseDateTime(forecastTimeStr);
-          if (!duckId || !startTime || !forecastTime ||
-              isNaN(startLat) || isNaN(startLon) || isNaN(forecastLat) || isNaN(forecastLon)) {
-            console.warn(`Skipping invalid row: ${row}`);
+          if (cols.length < 7) {
+            console.warn("Skipping invalid row (not enough columns):", row);
             continue;
           }
-          parsedData.push({ duckId, startTime, forecastTime, startLat, startLon, forecastLat, forecastLon });
-          timesSet.add(startTime.getTime());
-          timesSet.add(forecastTime.getTime());
+
+          const duckId          = cols[0];
+          const baseTimeStr     = cols[1];
+          const forecastTimeStr = cols[2];
+          const startLat        = cleanValue(cols[3]);
+          const startLon        = cleanValue(cols[4]);
+          const forecastLat     = cleanValue(cols[5]);
+          const forecastLon     = cleanValue(cols[6]);
+
+          const startTime = parseDateTime(baseTimeStr);
+          const forecastTime = parseDateTime(forecastTimeStr);
+
+          if (
+            !duckId || !startTime || !forecastTime ||
+            isNaN(startLat) || isNaN(startLon) ||
+            isNaN(forecastLat) || isNaN(forecastLon)
+          ) {
+            console.warn("Skipping invalid row:", row);
+            continue;
+          }
+
+          parsedData.push({
+            duckId,
+            startTime,
+            forecastTime,
+            startLat,
+            startLon,
+            forecastLat,
+            forecastLon
+          });
         }
+
+        // Sort by startTime
         parsedData.sort((a, b) => a.startTime - b.startTime);
-        const sortedTimes = Array.from(timesSet).sort((a, b) => a - b);
-        console.log(`Loaded ${parsedData.length} duck forecasts with ${sortedTimes.length} unique timestamps`);
+
+        // Identify min/max timestamps
+        let minTimeMs = Infinity;
+        let maxTimeMs = -Infinity;
+        for (const d of parsedData) {
+          const st = d.startTime.getTime();
+          const ft = d.forecastTime.getTime();
+          if (st < minTimeMs) minTimeMs = st;
+          if (ft < minTimeMs) minTimeMs = ft;
+          if (st > maxTimeMs) maxTimeMs = st;
+          if (ft > maxTimeMs) maxTimeMs = ft;
+        }
+
+        // Generate HOURLY timestamps
+        const hourlyTimes = [];
+        const oneHour = 3600000; // ms in an hour
+        for (let t = minTimeMs; t <= maxTimeMs; t += oneHour) {
+          hourlyTimes.push(t);
+        }
+
         setDuckForecasts(parsedData);
-        setUniqueTimes(sortedTimes);
+        setUniqueTimes(hourlyTimes);
         setTimeIndex(0);
         setIsLoading(false);
       })
@@ -156,50 +194,141 @@ export default function DuckMigrationMap() {
       });
   }, []);
 
-  // Current time calc
+  // Identify which days appear in the data (for day-selection)
+  const uniqueDays = useMemo(() => {
+    const daySet = new Set();
+    uniqueTimes.forEach(t => {
+      const d = new Date(t);
+      // midnight for that day
+      const dayMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      daySet.add(dayMidnight);
+    });
+    // Sort them so they're in chronological order
+    return Array.from(daySet).sort((a, b) => a - b);
+  }, [uniqueTimes]);
+
+  // Filter the hourly timeline by the selected day (if any)
+  const filteredTimes = useMemo(() => {
+    if (!selectedDay) {
+      // "All Days" => Return all hours
+      return uniqueTimes;
+    }
+    // Return only hours whose midnight matches `selectedDay`
+    return uniqueTimes.filter(t => {
+      const d = new Date(t);
+      const dayMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      return dayMidnight === selectedDay;
+    });
+  }, [uniqueTimes, selectedDay]);
+
+  // Current time = the hour at timeIndex in filteredTimes
   const currentTime = useMemo(() => {
-    if (!uniqueTimes.length || timeIndex < 0 || timeIndex >= uniqueTimes.length) return null;
-    return new Date(uniqueTimes[timeIndex]);
-  }, [uniqueTimes, timeIndex]);
+    if (!filteredTimes.length || timeIndex < 0 || timeIndex >= filteredTimes.length) {
+      return null;
+    }
+    return new Date(filteredTimes[timeIndex]);
+  }, [filteredTimes, timeIndex]);
+
+  // Auto-play effect
+  useEffect(() => {
+    let animationFrame;
+    if (isPlaying && filteredTimes.length > 0) {
+      const advanceTime = () => {
+        setTimeIndex(prev => {
+          const next = prev + 1;
+          // If we hit the end, loop to start
+          return next >= filteredTimes.length ? 0 : next;
+        });
+        animationFrame = requestAnimationFrame(advanceTime);
+      };
+      animationFrame = requestAnimationFrame(advanceTime);
+    }
+    return () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [isPlaying, filteredTimes]);
+
+  // If the user changes days, reset timeIndex if out of range
+  useEffect(() => {
+    if (timeIndex >= filteredTimes.length) {
+      setTimeIndex(0);
+    }
+  }, [filteredTimes, timeIndex]);
 
   // Compute duck positions
   const { duckStartPositions, duckForecastPositions } = useMemo(() => {
-    if (!currentTime) return { duckStartPositions: [], duckForecastPositions: [] };
+    if (!currentTime) {
+      return { duckStartPositions: [], duckForecastPositions: [] };
+    }
+
     const startPositions = [];
     const forecastPositions = [];
+
     for (const duckId of Object.keys(duckMap)) {
       const rows = duckMap[duckId];
       if (!rows.length) continue;
+
       let foundRow = null;
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
+        // If the current time is between startTime & forecastTime
         if (row.startTime <= currentTime && currentTime <= row.forecastTime) {
           foundRow = row;
           break;
         }
       }
+
+      // If no row covers currentTime, use earliest or latest
       if (!foundRow) {
-        if (currentTime < rows[0].startTime) foundRow = rows[0];
-        else if (currentTime > rows[rows.length - 1].forecastTime) foundRow = rows[rows.length - 1];
+        if (currentTime < rows[0].startTime) {
+          foundRow = rows[0];
+        } else if (currentTime > rows[rows.length - 1].forecastTime) {
+          foundRow = rows[rows.length - 1];
+        }
       }
       if (!foundRow) continue;
+
       const { startTime, forecastTime, startLat, startLon, forecastLat, forecastLon } = foundRow;
       const totalTimeSpan = forecastTime - startTime;
+
       if (totalTimeSpan <= 0) {
+        // No timespan => raw positions
         startPositions.push({ duckId, lat: startLat, lon: startLon, isSelected: duckId === selectedDuck });
         forecastPositions.push({ duckId, lat: forecastLat, lon: forecastLon, isSelected: duckId === selectedDuck });
       } else {
+        // Interpolate
         const elapsedTime = currentTime - startTime;
         const fraction = Math.max(0, Math.min(1, elapsedTime / totalTimeSpan));
-        const [currentLat, currentLon] = interpolateLatLon(startLat, startLon, forecastLat, forecastLon, fraction);
-        startPositions.push({ duckId, lat: startLat, lon: startLon, isSelected: duckId === selectedDuck, currentLat, currentLon });
-        forecastPositions.push({ duckId, lat: forecastLat, lon: forecastLon, isSelected: duckId === selectedDuck, currentLat, currentLon });
+        const [currentLat, currentLon] = interpolateLatLon(
+          startLat,
+          startLon,
+          forecastLat,
+          forecastLon,
+          fraction
+        );
+        startPositions.push({
+          duckId,
+          lat: startLat,
+          lon: startLon,
+          isSelected: duckId === selectedDuck,
+          currentLat,
+          currentLon
+        });
+        forecastPositions.push({
+          duckId,
+          lat: forecastLat,
+          lon: forecastLon,
+          isSelected: duckId === selectedDuck,
+          currentLat,
+          currentLon
+        });
       }
     }
+
     return { duckStartPositions: startPositions, duckForecastPositions: forecastPositions };
   }, [currentTime, duckMap, selectedDuck]);
 
-  // Scatter points
+  // Current (interpolated) positions for the ducks
   const currentDuckPositions = useMemo(() => {
     return duckStartPositions.map(startPos => ({
       duckId: startPos.duckId,
@@ -211,83 +340,114 @@ export default function DuckMigrationMap() {
 
   // Map layers
   const layers = useMemo(() => {
+    // 1) tileLayer (base map)
     const tileLayer = new TileLayer({
       id: "base-map",
       data: "https://a.tile.openstreetmap.org/{z}/{x}/{y}.png",
       minZoom: 0,
       maxZoom: 19,
       tileSize: 256,
-      renderSubLayers: (props) => {
-        const { bbox: { west, south, east, north } } = props.tile;
+      renderSubLayers: props => {
+        const {
+          bbox: { west, south, east, north }
+        } = props.tile;
         return new BitmapLayer(props, {
           data: null,
           image: props.data,
-          bounds: [west, south, east, north],
+          bounds: [west, south, east, north]
         });
-      },
+      }
     });
-    const startHeatmapLayer = new HeatmapLayer({
-      id: "duck-start-heatmap",
-      data: duckStartPositions,
-      getPosition: d => [d.lon, d.lat],
-      getWeight: d => 1,
-      radiusPixels: 60,
-      colorRange: START_HEAT_COLORS,
-      intensity: 1,
-      threshold: 0.05,
-      pickable: true,
-    });
+
+    // 2) forecast heatmap - drawn first
     const forecastHeatmapLayer = new HeatmapLayer({
       id: "duck-forecast-heatmap",
       data: duckForecastPositions,
       getPosition: d => [d.lon, d.lat],
       getWeight: d => 1,
-      radiusPixels: 60,
+      radiusPixels: 40,
       colorRange: FORECAST_HEAT_COLORS,
       intensity: 1,
       threshold: 0.05,
-      pickable: true,
+      pickable: true
     });
+
+    // 3) start heatmap - drawn *after* forecast so we see blue on top
+    const startHeatmapLayer = new HeatmapLayer({
+      id: "duck-start-heatmap",
+      data: duckStartPositions,
+      getPosition: d => [d.lon, d.lat],
+      getWeight: d => 1,
+      radiusPixels: 40,
+      colorRange: START_HEAT_COLORS,
+      intensity: 1,
+      threshold: 0.05,
+      pickable: true
+    });
+
+    // 4) scatter layer
     const scatterLayer = new ScatterplotLayer({
       id: "duck-scatter",
       data: currentDuckPositions,
       getPosition: d => [d.lon, d.lat],
-      getRadius: d => d.isSelected ? 200 : 80,
-      radiusMinPixels: d => d.isSelected ? 6 : 2,
-      radiusMaxPixels: d => d.isSelected ? 20 : 10,
-      getFillColor: d => d.isSelected ? [255, 165, 0, 220] : [0, 0, 0, 180],
+      getRadius: d => (d.isSelected ? 180 : 60),
+      radiusMinPixels: d => (d.isSelected ? 5 : 2),
+      radiusMaxPixels: d => (d.isSelected ? 15 : 10),
+      getFillColor: d => (d.isSelected ? [255, 165, 0, 200] : [0, 0, 0, 150]),
       stroked: true,
-      getLineColor: d => d.isSelected ? [255, 255, 255, 255] : [255, 255, 255, 0],
+      getLineColor: d => (d.isSelected ? [255, 255, 255, 255] : [255, 255, 255, 0]),
       lineWidthMinPixels: 1,
       pickable: true,
       onClick: info => {
-        if (info.object) setSelectedDuck(info.object.duckId);
+        if (info.object) {
+          setSelectedDuck(info.object.duckId);
+        }
       }
     });
-    const labelLayer = selectedDuck ? new TextLayer({
-      id: "duck-labels",
-      data: currentDuckPositions.filter(d => d.duckId === selectedDuck),
-      getPosition: d => [d.lon, d.lat],
-      getText: d => `Duck ID: ${d.duckId}`,
-      getSize: 12,
-      getAngle: 0,
-      getTextAnchor: "middle",
-      getAlignmentBaseline: "center",
-      getPixelOffset: [0, -20],
-      getColor: [255, 255, 255],
-      background: true,
-      getBorderColor: [0, 0, 0],
-      getBorderWidth: 3,
-      backgroundPadding: [5, 3],
-      getBackgroundColor: [0, 0, 0, 200]
-    }) : null;
-    return [tileLayer, startHeatmapLayer, forecastHeatmapLayer, scatterLayer, ...(labelLayer ? [labelLayer] : [])];
-  }, [duckStartPositions, duckForecastPositions, currentDuckPositions, selectedDuck]);
+
+    // 5) label layer
+    const labelLayer =
+      selectedDuck &&
+      new TextLayer({
+        id: "duck-labels",
+        data: currentDuckPositions.filter(d => d.duckId === selectedDuck),
+        getPosition: d => [d.lon, d.lat],
+        getText: d => `Duck ID: ${d.duckId}`,
+        getSize: 12,
+        getAngle: 0,
+        getTextAnchor: "middle",
+        getAlignmentBaseline: "center",
+        getPixelOffset: [0, -20],
+        getColor: [255, 255, 255],
+        background: true,
+        getBorderColor: [0, 0, 0],
+        getBorderWidth: 3,
+        backgroundPadding: [5, 3],
+        getBackgroundColor: [0, 0, 0, 200]
+      });
+
+    // Note: The order in this array is the order of rendering.
+    // We place forecast first, then start, so the blue layer is on top if they overlap.
+    return [
+      tileLayer,
+      forecastHeatmapLayer,
+      startHeatmapLayer,
+      scatterLayer,
+      ...(labelLayer ? [labelLayer] : [])
+    ];
+  }, [
+    duckStartPositions,
+    duckForecastPositions,
+    currentDuckPositions,
+    selectedDuck
+  ]);
 
   if (error) {
     return (
       <div style={{ padding: 20, textAlign: "center" }}>
-        <Typography variant="h5" color="error">Error loading duck migration data</Typography>
+        <Typography variant="h5" color="error">
+          Error loading duck migration data
+        </Typography>
         <Typography>{error}</Typography>
       </div>
     );
@@ -305,7 +465,7 @@ export default function DuckMigrationMap() {
         if (data && data.length > 0) {
           const lat = parseFloat(data[0].lat);
           const lon = parseFloat(data[0].lon);
-          setViewState({ ...viewState, latitude: lat, longitude: lon, zoom: 12 });
+          setViewState(view => ({ ...view, latitude: lat, longitude: lon, zoom: 12 }));
         } else {
           alert("Location not found!");
         }
@@ -328,93 +488,142 @@ export default function DuckMigrationMap() {
         onViewStateChange={({ viewState }) => setViewState(viewState)}
         getCursor={({ isDragging }) => (isDragging ? "grabbing" : "default")}
       />
-      {/* Location input at top */}
+
+      {/* Location input (top-left) */}
       <div
         style={{
           position: "absolute",
           top: 10,
           left: 10,
-          width: "300px",
-          height: "40px",
+          width: "250px",
           background: "rgba(255,255,255,0.9)",
-          padding: "10px",
-          borderRadius: "8px",
+          padding: "6px",
+          borderRadius: "6px",
           boxShadow: "0 2px 6px rgba(0,0,0,0.2)"
         }}
       >
         <Box display="flex" alignItems="center" gap={1}>
           <TextField
-            label="City or Town"
+            label="City / Town"
             size="small"
             value={cityInput}
             onChange={e => setCityInput(e.target.value)}
+            sx={{ flex: 1 }}
           />
           <Button variant="contained" onClick={handleGeocode} size="small">
             Focus
           </Button>
         </Box>
       </div>
-      {/* Controls at bottom */}
+
+      {/* Controls (bottom-left) */}
       <div
         style={{
           position: "absolute",
-          bottom: 20,
-          left: 20,
-          width: "250px",
-          background: "rgba(255,255,255,0.9)",
-          padding: "15px",
-          borderRadius: "8px",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-          zIndex: 999,
+          bottom: 10,
+          left: 10,
+          width: "240px",
+          background: "rgba(255,255,255,0.85)",
+          padding: "8px",
+          borderRadius: "6px",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+          zIndex: 999
         }}
       >
-        <Typography variant="h6" gutterBottom>{currentTimeLabel}</Typography>
-        {selectedDuck && (
-          <Typography variant="body2" color="primary" gutterBottom>
-            Tracking Duck ID: {selectedDuck} (Click elsewhere to deselect)
+          {/* Time Label */}
+          <Typography variant="subtitle2" gutterBottom>
+            {currentTimeLabel}
           </Typography>
-        )}
-        <Box display="flex" alignItems="center" mb={1} mt={1}>
-          <div style={{ width: 12, height: 12, backgroundColor: "blue", marginRight: 5 }}></div>
-          <Typography variant="caption" style={{ marginRight: 15 }}>Starting Location</Typography>
-          <div style={{ width: 12, height: 12, backgroundColor: "red", marginRight: 5 }}></div>
-          <Typography variant="caption">Forecast Location</Typography>
-        </Box>
-        <Box display="flex" alignItems="center" mb={1} mt={2}>
-          <Button
-            variant="contained"
-            color={isPlaying ? "secondary" : "primary"}
-            onClick={() => setIsPlaying(!isPlaying)}
-            size="small"
-            sx={{ mr: 2 }}
-            disabled={isLoading || !uniqueTimes.length}
-          >
-            {isPlaying ? "⏸ Pause" : "▶ Play"}
-          </Button>
-          {isLoading && (
-            <Typography variant="body2" color="textSecondary">Loading data...</Typography>
+
+          {/* Duck selection info */}
+          {selectedDuck && (
+            <Typography variant="body2" color="primary" gutterBottom>
+              Tracking Duck ID: {selectedDuck}
+            </Typography>
           )}
-        </Box>
-        <Slider
-          min={0}
-          max={Math.max(0, uniqueTimes.length - 1)}
-          value={timeIndex}
-          onChange={(_, val) => {
-            setTimeIndex(val);
-            if (isPlaying) setIsPlaying(false);
-          }}
-          step={1}
-          disabled={isLoading || !uniqueTimes.length}
-          valueLabelDisplay="auto"
-          valueLabelFormat={(idx) => {
-            if (idx < 0 || idx >= uniqueTimes.length) return "";
-            const d = new Date(uniqueTimes[idx]);
-            return formatDate(d);
-          }}
-        />
-        <Typography variant="body2" color="textSecondary" style={{ marginTop: 10 }}>
-          Tracking {Object.keys(duckMap).length} unique ducks
-        </Typography>
+
+          {/* Day selection dropdown */}
+          <FormControl size="small" fullWidth sx={{ mb: 1 }}>
+            <InputLabel id="day-select-label">Day</InputLabel>
+            <Select
+              labelId="day-select-label"
+              label="Day"
+              value={selectedDay || ""}
+              onChange={e => {
+                const val = e.target.value;
+                if (val === "ALL_DAYS") {
+                  setSelectedDay(null);
+                  setTimeIndex(0);
+                  setIsPlaying(false);
+                } else {
+                  const dayNumber = Number(val);
+                  setSelectedDay(dayNumber);
+                  setTimeIndex(0);
+                  setIsPlaying(false);
+                }
+              }}
+            >
+              <MenuItem value="ALL_DAYS">All Days</MenuItem>
+              {uniqueDays.map(day => (
+                <MenuItem key={day} value={day}>
+                  {formatDay(day)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Legend: start vs forecast */}
+          <Box display="flex" alignItems="center" mb={1}>
+            <Box sx={{ width: 10, height: 10, backgroundColor: "blue", mr: 1 }} />
+            <Typography variant="caption" sx={{ mr: 2 }}>Start</Typography>
+            <Box sx={{ width: 10, height: 10, backgroundColor: "red", mr: 1 }} />
+            <Typography variant="caption">Forecast</Typography>
+          </Box>
+
+          {/* Play/Pause + Slider */}
+          <Box display="flex" alignItems="center" mb={1}>
+            <Button
+              variant="contained"
+              color={isPlaying ? "secondary" : "primary"}
+              onClick={() => setIsPlaying(!isPlaying)}
+              size="small"
+              sx={{ mr: 1 }}
+              disabled={isLoading || !filteredTimes.length}
+            >
+              {isPlaying ? "Pause" : "Play"}
+            </Button>
+            {isLoading && (
+              <Typography variant="body2" color="textSecondary">
+                Loading...
+              </Typography>
+            )}
+          </Box>
+
+          <Slider
+            size="small"
+            min={0}
+            max={Math.max(0, filteredTimes.length - 1)}
+            value={timeIndex}
+            onChange={(_, val) => {
+              setTimeIndex(val);
+              if (isPlaying) {
+                setIsPlaying(false);
+              }
+            }}
+            step={1}
+            disabled={isLoading || !filteredTimes.length}
+            valueLabelDisplay="auto"
+            valueLabelFormat={idx => {
+              if (idx < 0 || idx >= filteredTimes.length) return "";
+              const d = new Date(filteredTimes[idx]);
+              return formatDate(d);
+            }}
+            sx={{ mb: 1 }}
+          />
+
+          <Typography variant="caption" color="textSecondary">
+            Tracking {Object.keys(duckMap).length} ducks
+          </Typography>
       </div>
     </div>
   );

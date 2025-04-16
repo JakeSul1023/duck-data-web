@@ -1,5 +1,7 @@
 import requests
 import time
+import os
+import pandas as pd
 
 def db_download(study_id, output_file, attributes):
     USERNAME = "Team7Waterfowl"
@@ -104,15 +106,17 @@ def db_download(study_id, output_file, attributes):
 db_download(
     study_id=2279158388,
     output_file="mallard_connectivity_data.csv",
-    attributes="event_id,timestamp,tag_local_identifier,individual_local_identifier,location_long,location_lat,barometric_height,external_temperature,height_above_msl,import_marked_outlier,individual_taxon_canonical_name,ground_speed,acceleration_raw_x,acceleration_raw_y,acceleration_raw_z,heading,light_level,battery_charge_percent,magnetic_field_raw_x,magnetic_field_raw_y,magnetic_field_raw_z,gps_satellite_count,gps_hdop"
+    attributes="event_id,timestamp,tag_local_identifier,location_long,location_lat,barometric_height,external_temperature,height_above_msl,individual_taxon_canonical_name,acceleration_raw_x,acceleration_raw_y,acceleration_raw_z,heading,magnetic_field_raw_x,magnetic_field_raw_y,magnetic_field_raw_z,gps_hdop"
+    #attributes (GNN) ="tag_local_identifier,location_long,location_lat,individual_taxon_canonical"
 )
 
 # Mallard Wintering Ecology database download
 db_download(
     study_id=975374057, 
     output_file="wintering_ecology_data.csv",
-    attributes="event_id,timestamp,tag_local_identifier,individual_local_identifier,location_long,location_lat,barometric_height,external_temperature,height_above_msl,import_marked_outlier,individual_taxon_canonical_name,ground_speed,acceleration_raw_x,acceleration_raw_y,acceleration_raw_z,heading,light_level,battery_charge_percent,magnetic_field_raw_x,magnetic_field_raw_y,magnetic_field_raw_z,gps_satellite_count,gps_hdop"
+    attributes="event_id,timestamp,tag_local_identifier,location_long,location_lat,barometric_height,external_temperature,height_above_msl,individual_taxon_canonical_name,acceleration_raw_x,acceleration_raw_y,acceleration_raw_z,heading,magnetic_field_raw_x,magnetic_field_raw_y,magnetic_field_raw_z,gps_hdop"
+    #attributes (GNN) ="tag_local_identifier,location_long,location_lat,individual_taxon_canonical"
 )
-            
+    
 # Make the code delete the csv at the end of the ml execution so it doesn't
 # keep a large file in the HPC if Renfro does not want it in there.

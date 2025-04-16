@@ -39,7 +39,7 @@
 
 /* Hero Section */
 .hero {
-  min-height: 300px; 
+  min-height: 100px; 
   background: linear-gradient(
     135deg,
     rgb(238, 186, 83) 0%,
@@ -50,13 +50,13 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2em;
-  color: #fff;
+  padding: 0em;
+  color: #ffffff;
 }
 
 /* Main Content */
 .content {
-  max-width: 960px; 
+  max-width: 1000px; 
   margin: 2em auto;
   padding: 1em;
 }
@@ -64,9 +64,9 @@
 /* Footer */
 footer {
   background: rgb(238, 186, 83);
-  color: #fff;
+  color: #ffffff;
   text-align: center;
-  padding: 1em 0;
-  margin-top: 2em;
+  padding: .1em 0;
+  margin-top: 0em;
 }
 
