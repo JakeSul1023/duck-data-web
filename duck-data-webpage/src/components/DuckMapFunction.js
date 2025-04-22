@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { DeckGL } from "@deck.gl/react";
-import { TileLayer } from "@deck.gl/geo-layers";
+import { TileLayer, TripsLayer } from "@deck.gl/geo-layers";
 import {
   Slider,
   Typography,
@@ -60,18 +60,12 @@ const INITIAL_VIEW = {
   bearing: 0,
 };
 
-const START_HEAT_COLORS = [
-  [0, 0, 255, 50],
-  [65, 105, 225, 100],
-  [0, 191, 255, 150],
-  [135, 206, 250, 200],
-];
-
-const FORECAST_HEAT_COLORS = [
-  [255, 69, 0, 50],
-  [255, 0, 0, 100],
-  [178, 34, 34, 150],
-  [139, 0, 0, 200],
+// New gradient heat map colors from blue to red
+const GRADIENT_HEAT_COLORS = [
+  [0, 0, 255, 50],     // Blue (lightest) - prediction start
+  [75, 0, 130, 100],   // Indigo - transition
+  [128, 0, 128, 150],  // Purple - middle transition 
+  [255, 0, 0, 200]     // Red (densest) - current position
 ];
 
 // Main Component
@@ -338,6 +332,29 @@ export default function DuckMigrationMap() {
     }));
   }, [duckStartPositions]);
 
+  // Generate path data for the migration trails
+  const duckPathData = useMemo(() => {
+    return Object.entries(duckMap).map(([duckId, rows]) => {
+      if (rows.length < 2) return null;
+      
+      // Extract all waypoints for this duck
+      const waypoints = rows.map(row => ({
+        position: [row.forecastLon, row.forecastLat],
+        timestamp: row.forecastTime.getTime()
+      }));
+      
+      // Sort by timestamp
+      waypoints.sort((a, b) => a.timestamp - b.timestamp);
+      
+      return {
+        duckId,
+        path: waypoints.map(wp => wp.position),
+        timestamps: waypoints.map(wp => wp.timestamp),
+        isSelected: duckId === selectedDuck
+      };
+    }).filter(Boolean);
+  }, [duckMap, selectedDuck]);
+
   // Map layers
   const layers = useMemo(() => {
     // 1) tileLayer (base map)
@@ -359,33 +376,73 @@ export default function DuckMigrationMap() {
       }
     });
 
-    // 2) forecast heatmap - drawn first
-    const forecastHeatmapLayer = new HeatmapLayer({
-      id: "duck-forecast-heatmap",
-      data: duckForecastPositions,
-      getPosition: d => [d.lon, d.lat],
-      getWeight: d => 1,
-      radiusPixels: 40,
-      colorRange: FORECAST_HEAT_COLORS,
-      intensity: 1,
-      threshold: 0.05,
-      pickable: true
+    // 2) Migration path trails - showing the flow of ducks over time
+    const migrationPathLayer = new TripsLayer({
+      id: 'duck-migration-paths',
+      data: duckPathData,
+      getPath: d => d.path,
+      getTimestamps: d => d.timestamps,
+      getColor: d => d.isSelected ? [255, 165, 0, 180] : [100, 100, 255, 100],
+      widthMinPixels: d => d.isSelected ? 3 : 2,
+      rounded: true,
+      trailLength: 0.15,
+      currentTime: currentTime ? currentTime.getTime() : 0,
+      updateTriggers: {
+        getColor: [selectedDuck]
+      }
     });
 
-    // 3) start heatmap - drawn *after* forecast so we see blue on top
-    const startHeatmapLayer = new HeatmapLayer({
-      id: "duck-start-heatmap",
-      data: duckStartPositions,
-      getPosition: d => [d.lon, d.lat],
-      getWeight: d => 1,
-      radiusPixels: 40,
-      colorRange: START_HEAT_COLORS,
-      intensity: 1,
-      threshold: 0.05,
-      pickable: true
+    // 3) Combined gradient heatmap layer showing the flock movement pattern
+    const combinedHeatmapLayer = new HeatmapLayer({
+      id: "duck-combined-heatmap",
+      data: [
+        // Current positions (weighted more heavily - will appear redder)
+        ...currentDuckPositions.map(d => ({
+          position: [d.lon, d.lat],
+          weight: 1.2,
+          type: 'current'
+        })),
+        // Intermediate positions (create purple gradient effect)
+        ...duckStartPositions.flatMap(d => {
+          // Create intermediate points between current and forecast
+          if (!d.currentLat || !d.currentLon) return [];
+          
+          // Generate 3 points along the path to create a gradient effect
+          const points = [];
+          for (let i = 0.2; i <= 0.8; i += 0.2) {
+            const [intermediateLat, intermediateLon] = interpolateLatLon(
+              d.currentLat, d.currentLon,
+              d.lat, d.lon,
+              i
+            );
+            points.push({
+              position: [intermediateLon, intermediateLat],
+              weight: 0.9 - i * 0.5, // Less weight as we move toward forecast
+              type: 'intermediate'
+            });
+          }
+          return points;
+        }),
+        // Forecast positions (weighted less - will appear bluer)
+        ...duckForecastPositions.map(d => ({
+          position: [d.lon, d.lat],
+          weight: 0.7,
+          type: 'forecast'
+        }))
+      ],
+      getPosition: d => d.position,
+      getWeight: d => d.weight,
+      radiusPixels: 60,  // Larger radius for smoother blending
+      colorRange: GRADIENT_HEAT_COLORS,
+      intensity: 1.5,    // Higher intensity for better visibility
+      threshold: 0.03,   // Lower threshold to show more of the gradient
+      pickable: true,
+      updateTriggers: {
+        getWeight: [currentTime]
+      }
     });
 
-    // 4) scatter layer
+    // 4) scatter layer - shows individual ducks
     const scatterLayer = new ScatterplotLayer({
       id: "duck-scatter",
       data: currentDuckPositions,
@@ -426,12 +483,10 @@ export default function DuckMigrationMap() {
         getBackgroundColor: [0, 0, 0, 200]
       });
 
-    // Note: The order in this array is the order of rendering.
-    // We place forecast first, then start, so the blue layer is on top if they overlap.
     return [
       tileLayer,
-      forecastHeatmapLayer,
-      startHeatmapLayer,
+      migrationPathLayer,
+      combinedHeatmapLayer,
       scatterLayer,
       ...(labelLayer ? [labelLayer] : [])
     ];
@@ -439,7 +494,9 @@ export default function DuckMigrationMap() {
     duckStartPositions,
     duckForecastPositions,
     currentDuckPositions,
-    selectedDuck
+    duckPathData,
+    selectedDuck,
+    currentTime
   ]);
 
   if (error) {
@@ -572,12 +629,24 @@ export default function DuckMigrationMap() {
             </Select>
           </FormControl>
 
-          {/* Legend: start vs forecast */}
-          <Box display="flex" alignItems="center" mb={1}>
-            <Box sx={{ width: 10, height: 10, backgroundColor: "blue", mr: 1 }} />
-            <Typography variant="caption" sx={{ mr: 2 }}>Start</Typography>
-            <Box sx={{ width: 10, height: 10, backgroundColor: "red", mr: 1 }} />
-            <Typography variant="caption">Forecast</Typography>
+          {/* Updated Legend with gradient */}
+          <Box display="flex" flexDirection="column" mb={1}>
+            <Typography variant="caption" gutterBottom>Duck Migration Pattern:</Typography>
+            <Box display="flex" alignItems="center">
+              <Box 
+                sx={{ 
+                  width: 120, 
+                  height: 12, 
+                  background: 'linear-gradient(to right, blue, indigo, purple, red)',
+                  mr: 1,
+                  borderRadius: 1 
+                }} 
+              />
+            </Box>
+            <Box display="flex" justifyContent="space-between">
+              <Typography variant="caption">Prediction</Typography>
+              <Typography variant="caption">Current</Typography>
+            </Box>
           </Box>
 
           {/* Play/Pause + Slider */}

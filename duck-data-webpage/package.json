@@ -5,7 +5,7 @@
   "homepage": "https://jakesul1023.github.io/duck-data-web/",
   "dependencies": {
     "@craco/craco": "^7.1.0",
-    "@deck.gl/aggregation-layers": "^9.1.8",
+    "@deck.gl/aggregation-layers": "^9.1.11",
     "@deck.gl/geo-layers": "^9.1.8",
     "@deck.gl/layers": "^9.1.8",
     "@deck.gl/react": "^9.1.8",

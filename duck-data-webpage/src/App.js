@@ -1,11 +1,12 @@
 // duck-data-webpage/src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import NavBar from './components/navbar'; // Correct path
-import Home from './pages/home'; // Example page
-import AboutUs from './pages/aboutus'; // Example page
-import LearnMore from './pages/learnmore'; // Example page
+import NavBar from './components/navbar'; 
+import Home from './pages/home'; 
+import AboutUs from './pages/aboutus'; 
+import LearnMore from './pages/learnmore'; 
 import './App.css'; // Main CSS
+import Newsletter from './pages/newsletter';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/learnmore" element={<LearnMore />} />
+            <Route path="/newsletter" element={<Newsletter />} />
             {/* Add other routes here */}
           </Routes>
         </main>

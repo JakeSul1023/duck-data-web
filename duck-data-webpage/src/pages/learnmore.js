@@ -5,7 +5,7 @@ export default function LearnMore() {
     <div>
       <h2>Learn More</h2>
       <p>
-        Learn more page
+        Learn more page 
       </p>
     </div>
   );

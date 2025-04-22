@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 def db_download(study_id, output_file, attributes, start_ts=None, end_ts=None):
-    USERNAME = "Team7Waterfowl"
+    USERNAME = "Team7Waterfowl" #Input own user and password as needed
     PASSWORD = "WingWatch007"
 
     url = "https://www.movebank.org/movebank/service/direct-read"
@@ -109,19 +109,15 @@ def db_download(study_id, output_file, attributes, start_ts=None, end_ts=None):
 db_download(
     study_id=2279158388,
     output_file="mallard_connectivity_data.csv",
-    #attributes="event_id,timestamp,tag_local_identifier,location_long,location_lat,barometric_height,external_temperature,height_above_msl,individual_taxon_canonical_name,acceleration_raw_x,acceleration_raw_y,acceleration_raw_z,heading,magnetic_field_raw_x,magnetic_field_raw_y,magnetic_field_raw_z,gps_hdop"
     attributes="tag_local_identifier,timestamp,location_long,location_lat,individual_taxon_canonical_name",
-    start_ts="20240101000000000",   #time selector3
-    end_ts="20241231235959000"
+    start_ts = "20240201000000000",
+    end_ts = "20240430235959000"
+
     )
 
 # Mallard Wintering Ecology database download
 #db_download(
 #    study_id=975374057, 
 #    output_file="wintering_ecology_data.csv",
-#    attributes="event_id,timestamp,tag_local_identifier,location_long,location_lat,barometric_height,external_temperature,height_above_msl,individual_taxon_canonical_name,acceleration_raw_x,acceleration_raw_y,acceleration_raw_z,heading,magnetic_field_raw_x,magnetic_field_raw_y,magnetic_field_raw_z,gps_hdop"
-#    #attributes (GNN) ="tag_local_identifier,location_long,location_lat,individual_taxon_canonical"
+#    attributes="tag_local_identifier,timestamp,location_long,location_lat,individual_taxon_canonical_name",
 #)
-    
-# Make the code delete the csv at the end of the ml execution so it doesn't
-# keep a large file in the HPC if Renfro does not want it in there.
