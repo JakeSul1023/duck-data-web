@@ -23,7 +23,7 @@ function App() {
           </Routes>
         </main>
         <footer> {/* Footer inside .App */}
-           <p>© {new Date().getFullYear()} Duck Migration Tracker</p>
+           <p>© {new Date().getFullYear()} Mallard Migration Prediction</p>
         </footer>
       </div>
     </Router>
