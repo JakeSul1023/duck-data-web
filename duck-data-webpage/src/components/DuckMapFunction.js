@@ -73,29 +73,33 @@ export default function DuckMapFunction() {
 
 
   /* ───────── CSV load ───────── */
-  useEffect(() => {
-    setIsLoading(true);
-    workerRef.current = new Worker(new URL('../workers/dataWorker.js', import.meta.url));
-    fetch(`${process.env.PUBLIC_URL}/A07_A13.csv`)
-      .then(r => (r.ok ? r.text() : Promise.reject(r.statusText)))
-      .then(csvText => {
-        workerRef.current.onmessage = (e) => {
-          const { hours, binnedRows } = e.data;
-          setHours(hours);
-          setRows(Object.values(binnedRows).flat()); // or setBinnedRows(binnedRows) if you want to keep it binned
-          setIdx(0);
-          setIsLoading(false);
-        };
-        workerRef.current.postMessage({ csvText });
-      })
-      .catch(err => {
-        setError(`Failed to load data: ${err.message}`);
+  // ...existing code...
+useEffect(() => {
+  setIsLoading(true);
+  workerRef.current = new Worker(new URL('../workers/dataWorker.js', import.meta.url));
+  fetch(`${process.env.PUBLIC_URL}/Week_prediction.arrow`)
+    .then(r => r.arrayBuffer())
+    .then(arrayBuffer => {
+      workerRef.current.onmessage = (e) => {
+        const { hours, binnedRows, error, debug } = e.data;
+        if (debug) console.log(debug);
+        if (error) setError(error);
+        setHours(hours);
+        setRows(Object.values(binnedRows).flat());
+        setIdx(0);
         setIsLoading(false);
-      });
-    return () => {
-      if (workerRef.current) workerRef.current.terminate();
-    };
-  }, []);
+      };
+      workerRef.current.postMessage({ arrayBuffer });
+    })
+    .catch(err => {
+      setError(`Failed to load data: ${err.message}`);
+      setIsLoading(false);
+    });
+  return () => {
+    if (workerRef.current) workerRef.current.terminate();
+  };
+}, []);
+// ...existing code...
 
   /* ───────── load flyway GeoJSON ───────── */
   useEffect(() => {
@@ -164,7 +168,7 @@ export default function DuckMapFunction() {
     if (play && filteredHours.length) {
       timer = setTimeout(() => {
         setIdx(i => (i + 1) % filteredHours.length);
-      }, 100); // 100ms per frame
+      }, 100); 
     }
     return () => timer && clearTimeout(timer);
   }, [play, filteredHours, idx]);
@@ -204,39 +208,6 @@ export default function DuckMapFunction() {
       // .filter(p => insideFlyway([p.lon, p.lat])), // REMOVE THIS LINE TEMPORARILY
     [departPos]
   );
-
-  /* ─── build heat points inside polygon ───────── */
-  const heatFiltered = useMemo(() => {
-    const pts = [];
-    // Only add current positions inside the flyway
-    curPos.forEach(p => {
-      const inside = insideFlyway([p.lon, p.lat]);
-      if (inside) {
-        pts.push({ position: [p.lon, p.lat], weight: 2.5 });
-      }
-    });
-
-    // Interpolated points between current and departure
-    departPos.forEach(d => {
-      const cp = curPos.find(c => c.duck === d.duck);
-      if (!cp) return;
-      for (let f = 0.2; f <= 0.8; f += 0.2) {
-        const [lat, lon] = interp(cp.lat, cp.lon, d.lat, d.lon, f);
-        if (insideFlyway([lon, lat])) {
-          pts.push({ position: [lon, lat], weight: 1.5 - 0.5 * f });
-        }
-      }
-    });
-
-    // Destination positions
-    destPos.forEach(d => {
-      if (insideFlyway([d.lon, d.lat])) {
-        pts.push({ position: [d.lon, d.lat], weight: 1.2 });
-      }
-    });
-
-    return pts;
-  }, [curPos, departPos, destPos, insideFlyway]);
   
   /* ─── build paths ───────── */
   const pathData = useMemo(() =>
@@ -244,16 +215,13 @@ export default function DuckMapFunction() {
       if (arr.length < 2) return null;
       const pts = arr.map(r => ({
         pos: [r.forecastLon, r.forecastLat],
-        t: r.forecastTime // <-- already a timestamp, do NOT call .getTime()
+        t: r.forecastTime 
       })).sort((a, b) => a.t - b.t);
       return { duck: d, path: pts.map(p => p.pos), ts: pts.map(p => p.t), sel: d === pick };
     }).filter(Boolean),
   [byDuck, pick]);
 
   /* ─── layers ───────── */
-  // ...existing code...
-
-// Memoize static layers (basemap and flyway polygons)
 const staticLayers = useMemo(() => {
   const carto = new TileLayer({
     id: "carto",
@@ -273,7 +241,7 @@ const staticLayers = useMemo(() => {
     data: fly,
     filled: true,
     stroked: false,
-    getFillColor: [0, 100, 33, 20],
+    getFillColor: [0, 100, 33, 100],
     parameters: { depthTestDisable: true }
   });
 
@@ -282,33 +250,65 @@ const staticLayers = useMemo(() => {
     data: fly,
     filled: false,
     stroked: true,
-    lineWidthMinPixels: 1,
-    getLineColor: [0, 130, 33, 180],
+    lineWidthMinPixels: 0,
+    getLineColor: [0, 130, 33, 0],
     parameters: { depthTestDisable: true }
   });
 
   return [carto, flyFill, flyOutline].filter(Boolean);
 }, [fly]);
 
+const { currentHeat, forecastHeat } = useMemo(() => {
+  const current = [];
+  const forecast = [];
+  curPos.forEach(p => {
+    if (insideFlyway([p.lon, p.lat])) {
+      current.push({ position: [p.lon, p.lat], weight: 2.5 });
+    }
+  });
+  destPos.forEach(d => {
+    if (insideFlyway([d.lon, d.lat])) {
+      forecast.push({ position: [d.lon, d.lat], weight: 2.5 });
+    }
+  });
+  return { currentHeat: current, forecastHeat: forecast };
+}, [curPos, destPos, insideFlyway]);
+
 // Memoize dynamic layers (heatmap, trips, points, label)
 const dynamicLayers = useMemo(() => {
-  const GRADIENT_HEAT_COLORS = [
-    [0, 0, 255, 0],
-    [0, 0, 255, 128],
-    [0, 255, 0, 128],
-    [255, 255, 0, 192],
+  // Red for current, blue for forecast
+  const RED_COLORS = [
+    [255, 0, 0, 0],
+    [255, 0, 0, 120],
     [255, 0, 0, 255]
   ];
+  const BLUE_COLORS = [
+    [0, 0, 255, 0],
+    [0, 0, 255, 120],
+    [0, 0, 255, 255]
+  ];
 
-  const gradientHeatmap = new HeatmapLayer({
-    id: "gradient-heatmap",
-    data: heatFiltered,
+  const currentHeatmap = new HeatmapLayer({
+    id: "current-heatmap",
+    data: currentHeat,
     getPosition: d => d.position,
     getWeight: d => d.weight,
-    radiusPixels: 100, 
-    colorRange: GRADIENT_HEAT_COLORS,
+    radiusPixels: 115,
+    colorRange: RED_COLORS,
+    intensity: 2,
+    threshold: .08,
+    parameters: { depthTestDisable: true }
+  });
+
+  const forecastHeatmap = new HeatmapLayer({
+    id: "forecast-heatmap",
+    data: forecastHeat,
+    getPosition: d => d.position,
+    getWeight: d => d.weight,
+    radiusPixels: 100,
+    colorRange: BLUE_COLORS,
     intensity: 1,
-    threshold: 0.01,
+    threshold: 0.08,
     parameters: { depthTestDisable: true }
   });
 
@@ -352,8 +352,14 @@ const dynamicLayers = useMemo(() => {
     parameters: { depthTestDisable: true }
   });
 
-  return [gradientHeatmap, trips, points, ...(label ? [label] : [])];
-}, [heatFiltered, pathData, curPos, pick, now]);
+  return [
+    currentHeatmap,
+    forecastHeatmap,
+    trips,
+    points,
+    ...(label ? [label] : [])
+  ];
+}, [currentHeat, forecastHeat, pathData, curPos, pick, now]);
 
 // Combine static and dynamic layers for DeckGL
 const layers = useMemo(() => [
@@ -361,7 +367,6 @@ const layers = useMemo(() => [
   ...dynamicLayers
 ], [staticLayers, dynamicLayers]);
 
-// ...existing code...
   if (error) {
     return (
       <Box p={3} textAlign="center">

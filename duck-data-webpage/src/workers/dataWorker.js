@@ -1,51 +1,69 @@
 /* eslint-disable no-restricted-globals */
-// src/workers/dataWorker.js
+
+import * as arrow from "apache-arrow";
 
 self.onmessage = function (e) {
-    const { csvText } = e.data;
-    const lines = csvText.trim().split(/\r?\n/);
-    if (lines.length <= 1) {
-      self.postMessage({ hours: [], binnedRows: {} });
-      return;
-    }
-  
-    // 1) Parse all rows into a flat array
-    const rows = [];
-    for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(",");
-      if (cols.length < 8) continue;
-      const duck = cols[0];
-      const st = new Date(cols[1].includes("T") ? cols[1] : cols[1].replace(" ", "T") + "Z").getTime();
-      const ft = new Date(cols[3].includes("T") ? cols[3] : cols[3].replace(" ", "T") + "Z").getTime();
-      const sLat = parseFloat(cols[4]), sLon = parseFloat(cols[5]);
-      const fLat = parseFloat(cols[6]), fLon = parseFloat(cols[7]);
-      if (!duck || isNaN(st) || isNaN(ft) || [sLat, sLon, fLat, fLon].some(isNaN)) continue;
-      rows.push({ duck, startTime: st, forecastTime: ft, startLat: sLat, startLon: sLon, forecastLat: fLat, forecastLon: fLon });
-    }
-  
-    // 2) Build the hourly index
+  const { arrayBuffer } = e.data;
+  if (!arrayBuffer) {
+    self.postMessage({ hours: [], binnedRows: {}, byDuck: {}, error: "No arrayBuffer" });
+    return;
+  }
+
+  let rows = [];
+  let hours = [];
+  let binnedRows = {};
+  let byDuck = {};
+
+  try {
+    const table = arrow.tableFromIPC(arrayBuffer);
+    const duckCol = table.getChild('duck_id');
+    const stCol = table.getChild('base_timestamp');
+    const ftCol = table.getChild('forecast_timestamp');
+    const sLatCol = table.getChild('start_lat');
+    const sLonCol = table.getChild('start_lon');
+    const fLatCol = table.getChild('forecast_lat');
+    const fLonCol = table.getChild('forecast_lon');
+
+    for (let i = 0; i < table.numRows; i++) {
+        let duck = duckCol.get(i);
+        // Convert BigInt to string if needed
+        if (typeof duck === "bigint") duck = duck.toString();
+        const st = new Date(stCol.get(i)).getTime();
+        const ft = new Date(ftCol.get(i)).getTime();
+        const sLat = parseFloat(sLatCol.get(i));
+        const sLon = parseFloat(sLonCol.get(i));
+        const fLat = parseFloat(fLatCol.get(i));
+        const fLon = parseFloat(fLonCol.get(i));
+        if (!duck || isNaN(st) || isNaN(ft) || [sLat, sLon, fLat, fLon].some(isNaN)) continue;
+        rows.push({ duck, startTime: st, forecastTime: ft, startLat: sLat, startLon: sLon, forecastLat: fLat, forecastLon: fLon });
+      }
+
     const times = rows.flatMap(r => [r.startTime, r.forecastTime]);
     const minT = Math.min(...times), maxT = Math.max(...times);
-    const hours = [];
     for (let t = minT; t <= maxT; t += 3600000) hours.push(t);
-  
-    const binnedRows = {};
+
     rows.forEach(r => {
       const hour = Math.floor(r.startTime / 3600000) * 3600000;
       (binnedRows[hour] ??= []).push(r);
     });
-    
-    // 4) Group rows by duck ID
-    const byDuck = {};
+
     rows.forEach(r => {
       (byDuck[r.duck] ??= []).push(r);
     });
-  
-    // 4) Post back the results
+
     self.postMessage({
-        hours,        // array of hour timestamps
-        binnedRows,   // object: {hour: [row, row, ...], ...}
-        byDuck        // object: {duckId: [row, row, ...], ...}  // optional, if you want to bin by duck
+      hours,
+      binnedRows,
+      byDuck,
+      debug: `Rows loaded: ${rows.length}, Example row: ${JSON.stringify(rows[0])}`
     });
+  } catch (err) {
+    self.postMessage({
+      hours,
+      binnedRows,
+      byDuck,
+      error: err.message,
+      debug: `Rows loaded: ${rows.length}`
+    });
+  }
 };
-  
