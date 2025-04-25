@@ -10,19 +10,19 @@ import Newsletter from './pages/newsletter';
 
 function App() {
   return (
-    <Router basename="/duck-data-web"> {/* Set the base URL for routing */}
-      <div className="App"> {/* This div gets the padding-left */}
-        <NavBar /> {/* Sidebar/Hamburger */}
-        <main className="content"> {/* Content area */}
+    <Router basename="/duck-data-web"> 
+      <div className="App"> 
+        <NavBar /> 
+        <main className="content"> 
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/learnmore" element={<LearnMore />} />
             <Route path="/newsletter" element={<Newsletter />} />
-            {/* Add other routes here */}
+           
           </Routes>
         </main>
-        <footer> {/* Footer inside .App */}
+        <footer> 
            <p>© {new Date().getFullYear()} Mallard Migration Prediction</p>
         </footer>
       </div>

@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import styled from "styled-components";
 
 // --- Constants ---
-const navbarHeight = "60px"; // Define navbar height
-const mobileBreakpoint = "768px"; // Define when to switch to hamburger
+const navbarHeight = "60px"; 
+const mobileBreakpoint = "768px"; 
 
 // --- Styled Components ---
 
@@ -26,7 +26,6 @@ const Nav = styled.nav`
   font-family: 'Lato', sans-serif;
 `;
 
-// Optional: Add a placeholder for Logo/Title
 const LogoTitle = styled(Link)` // Make it a link to home
   color: #fff;
   font-size: 1.5em;

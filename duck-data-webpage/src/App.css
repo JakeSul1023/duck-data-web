@@ -7,8 +7,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #e0c08a; /* Tan Background */
-  color: #4A4A4A; /* Darker Gray Text (Readability) */
+  background-color: #e0c08a;
+  color: #4A4A4A; 
   line-height: 1.6;
 }
 
@@ -17,7 +17,7 @@ body {
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
-  padding-top: 60px; /* Match navbarHeight */
+  padding-top: 60px; 
 }
 
 /* src/index.css or App.css */
@@ -29,8 +29,8 @@ body {
 
 .content {
   padding: 1em 2em 2em 2em;
-  background-color: #f0e0c0; /* Lighter Tan Content Area */
-  color: #4A4A4A; /* Darker Gray Text */
+  background-color: #f0e0c0; 
+  color: #4A4A4A; 
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   flex-grow: 1;
@@ -41,8 +41,8 @@ body {
 }
 
 footer {
-  background: #c0a07a; /* Darker Tan Footer */
-  color: #8B4513; /* Khaki Text (Adjust) */
+  background: #c0a07a; 
+  color: #8B4513; 
   text-align: center;
   padding: 1.5em 0;
   width: 100%;
@@ -56,7 +56,7 @@ footer p {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Merriweather', serif;
-  color: #A0522D; /* Darker Forest Green Headings */
+  color: #A0522D;
   margin-top: 1.2em;
   margin-bottom: 0.6em;
   font-weight: bold;
@@ -68,17 +68,17 @@ h3 { font-size: 1.7em; line-height: 1.4; }
 p {
   font-size: 1.05em;
   margin-bottom: 1.2em;
-  color: #5E5E5E; /* Even Darker Gray for paragraphs */
+  color: #5E5E5E; 
 }
 
 a {
-  color: #8B4513; /* Darker Forest Green Links */
+  color: #8B4513; 
   text-decoration: none;
   transition: color 0.2s ease-in-out;
   font-weight: bold;
 }
 
 a:hover {
-  color: #A0522D; /* Slightly lighter Forest Green */
+  color: #A0522D; 
   text-decoration: underline;
 }

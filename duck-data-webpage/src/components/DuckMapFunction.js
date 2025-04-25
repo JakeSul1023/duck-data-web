@@ -24,7 +24,6 @@ import {
   InputLabel
 } from "@mui/material";
 
-/* ───────── helpers ───────── */
 const interp = (aLat, aLon, bLat, bLon, f) => [
   aLat + (bLat - aLat) * f,
   aLon + (bLon - aLon) * f
@@ -45,7 +44,6 @@ function formatDay(ts) {
   });
 }
 
-/* ───────── constants ───────── */
 const INITIAL = {
   latitude: 36.28,
   longitude: -89.42,
@@ -56,7 +54,6 @@ const INITIAL = {
   bearing: 0
 };
 
-/* ───────── component ───────── */
 export default function DuckMapFunction() {
   const [rows, setRows] = useState([]);
   const [hours, setHours] = useState([]);
@@ -72,8 +69,6 @@ export default function DuckMapFunction() {
   const workerRef = useRef();
 
 
-  /* ───────── CSV load ───────── */
-  // ...existing code...
 useEffect(() => {
   setIsLoading(true);
   workerRef.current = new Worker(new URL('../workers/dataWorker.js', import.meta.url));
@@ -99,9 +94,7 @@ useEffect(() => {
     if (workerRef.current) workerRef.current.terminate();
   };
 }, []);
-// ...existing code...
 
-  /* ───────── load flyway GeoJSON ───────── */
   useEffect(() => {
     fetch(`${process.env.PUBLIC_URL}/Mississippi_Flyway_FeatureCollection.geojson`)
       .then(r => (r.ok ? r.json() : Promise.reject(r.statusText)))
@@ -112,7 +105,6 @@ useEffect(() => {
       .catch(console.error);
   }, []);
 
-  /* ─── point-in-polygon helper ───────── */
   const insideFlyway = useMemo(() => {
     if (!fly || !fly.features) return () => false;
     const feats = Array.isArray(fly.features) ? fly.features : [];
@@ -129,7 +121,6 @@ useEffect(() => {
   }, [fly]);
 
 
-  /* ─── group rows by duck ID ───────── */
   const byDuck = useMemo(() => {
     const m = {};
     rows.forEach(r => (m[r.duck] ??= []).push(r));
@@ -137,7 +128,6 @@ useEffect(() => {
     return m;
   }, [rows]);
 
-  /* ─── unique days dropdown ───────── */
   const uniqueDays = useMemo(() => {
     const s = new Set();
     hours.forEach(t => {
@@ -147,7 +137,6 @@ useEffect(() => {
     return [...s].sort((a, b) => a - b);
   }, [hours]);
 
-  /* ─── filter hours by selected day ───────── */
   const filteredHours = useMemo(() => {
     if (!selectedDay) return hours;
     return hours.filter(t => {
@@ -156,13 +145,11 @@ useEffect(() => {
     });
   }, [hours, selectedDay]);
 
-  /* ─── current time based on slider/animation ───────── */
   const now = useMemo(
     () => (filteredHours.length ? new Date(filteredHours[Math.min(idx, filteredHours.length - 1)]) : null),
     [filteredHours, idx]
   );
 
-  /* ─── autoplay loop ───────── */
   useEffect(() => {
     let timer;
     if (play && filteredHours.length) {
@@ -173,7 +160,6 @@ useEffect(() => {
     return () => timer && clearTimeout(timer);
   }, [play, filteredHours, idx]);
 
-  /* ─── reset when day changes ───────── */
   useEffect(() => {
     if (
       filteredHours.length > 0 && 
@@ -184,7 +170,6 @@ useEffect(() => {
     }
   }, [filteredHours, idx]);
 
-  /* ─── compute depart & dest positions ───────── */
   const { departPos, destPos } = useMemo(() => {
     if (!now) return { departPos: [], destPos: [] };
     const dep = [], dst = [];
@@ -201,15 +186,12 @@ useEffect(() => {
     return { departPos: dep, destPos: dst };
   }, [now, byDuck, pick]);
 
-  /* ─── filter current positions inside polygon ───────── */
   const curPos = useMemo(() =>
     departPos
       .map(p => ({ duck: p.duck, lat: p.curLat, lon: p.curLon, sel: p.sel })),
-      // .filter(p => insideFlyway([p.lon, p.lat])), // REMOVE THIS LINE TEMPORARILY
     [departPos]
   );
   
-  /* ─── build paths ───────── */
   const pathData = useMemo(() =>
     Object.entries(byDuck).map(([d, arr]) => {
       if (arr.length < 2) return null;
@@ -221,7 +203,6 @@ useEffect(() => {
     }).filter(Boolean),
   [byDuck, pick]);
 
-  /* ─── layers ───────── */
 const staticLayers = useMemo(() => {
   const carto = new TileLayer({
     id: "carto",
@@ -274,7 +255,6 @@ const { currentHeat, forecastHeat } = useMemo(() => {
   return { currentHeat: current, forecastHeat: forecast };
 }, [curPos, destPos, insideFlyway]);
 
-// Memoize dynamic layers (heatmap, trips, points, label)
 const dynamicLayers = useMemo(() => {
   // Red for current, blue for forecast
   const RED_COLORS = [
@@ -361,7 +341,6 @@ const dynamicLayers = useMemo(() => {
   ];
 }, [currentHeat, forecastHeat, pathData, curPos, pick, now]);
 
-// Combine static and dynamic layers for DeckGL
 const layers = useMemo(() => [
   ...staticLayers,
   ...dynamicLayers
