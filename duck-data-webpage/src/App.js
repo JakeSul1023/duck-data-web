@@ -10,7 +10,7 @@ import Newsletter from './pages/newsletter';
 
 function App() {
   return (
-    <Router>
+    <Router basename="/duck-data-web"> {/* Set the base URL for routing */}
       <div className="App"> {/* This div gets the padding-left */}
         <NavBar /> {/* Sidebar/Hamburger */}
         <main className="content"> {/* Content area */}
