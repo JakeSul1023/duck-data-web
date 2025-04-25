@@ -23,7 +23,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build the project
+      - name: Copy prediction CSV to public/
+        run: cp duck_predictions.csv public/
+
+      - name: Build the React app
         run: npm run build
 
       - name: Deploy to GitHub Pages
