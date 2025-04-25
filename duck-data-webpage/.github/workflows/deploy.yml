@@ -1,21 +1,21 @@
-name: Website Deploy
+name: Auto Deploy Website
 
 on:
   push:
     branches:
-      - moveduck-page
+      - main
     paths:
-      - duck_predictions.csv
+      - Week_prediction.arrow
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
+      - name: Set up Node
         uses: actions/setup-node@v3
         with:
           node-version: '16'
@@ -23,8 +23,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Copy prediction CSV to public/
-        run: cp duck_predictions.csv public/
+      - name: Copy prediction file to public
+        run: cp Week_prediction.arrow public/
 
       - name: Build the React app
         run: npm run build
@@ -34,4 +34,4 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build
-          publish_branch: moveduck-page
+          publish_branch: moveduck-ghp
