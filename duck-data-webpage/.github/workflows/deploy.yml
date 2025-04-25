@@ -5,8 +5,7 @@ on:
     branches:
       - main
     paths:
-      - public/Week_prediction.arrow
-
+        - duck-data-webpage/public/Week_prediction.arrow
 jobs:
   deploy:
     runs-on: ubuntu-latest
