@@ -26,8 +26,9 @@ jobs:
       - name: Build the React app
         run: cd duck-data-webpage && npm run build
 
-      - name: List build output (debug)
-        run: ls -la duck-data-webpage/build
+      - name: List entire build folder contents
+        run: find duck-data-webpage/build
+      
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
