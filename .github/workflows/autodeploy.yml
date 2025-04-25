@@ -9,7 +9,6 @@ on:
 
 jobs:
   deploy:
-    if: github.event.head_commit.modified && contains(join(github.event.head_commit.modified), 'duck-data-webpage/public/Week_prediction.arrow')
     runs-on: ubuntu-latest
 
     steps:
