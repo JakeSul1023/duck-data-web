@@ -26,9 +26,13 @@ jobs:
       - name: Build the React app
         run: cd duck-data-webpage && npm run build
 
+      - name: List build output (debug)
+        run: ls -la duck-data-webpage/build
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./duck-data-webpage/build
           publish_branch: moveduck-ghp
+          force_orphan: true
