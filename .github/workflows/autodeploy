@@ -21,14 +21,14 @@ jobs:
           node-version: '16'
 
       - name: Install dependencies
-        run: npm install
+        run: cd duck-data-webpage && npm install
 
       - name: Build the React app
-        run: npm run build
+        run: cd duck-data-webpage && npm run build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+          publish_dir: ./duck-data-webpage/build
           publish_branch: moveduck-ghp
