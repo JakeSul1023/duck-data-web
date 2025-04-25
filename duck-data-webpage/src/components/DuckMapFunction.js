@@ -241,7 +241,7 @@ const staticLayers = useMemo(() => {
     data: fly,
     filled: true,
     stroked: false,
-    getFillColor: [0, 100, 33, 100],
+    getFillColor: [0, 100, 33, 70],
     parameters: { depthTestDisable: true }
   });
 
