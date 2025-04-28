@@ -273,9 +273,9 @@ const dynamicLayers = useMemo(() => {
     data: currentHeat,
     getPosition: d => d.position,
     getWeight: d => d.weight,
-    radiusPixels: 115,
+    radiusPixels: 0,
     colorRange: RED_COLORS,
-    intensity: 2,
+    intensity: 0,
     threshold: .08,
     parameters: { depthTestDisable: true }
   });
