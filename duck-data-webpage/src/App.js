@@ -10,7 +10,7 @@ import Newsletter from './pages/newsletter';
 
 function App() {
   return (
-    <Router basename="/duck-data-web"> 
+    <Router> 
       <div className="App"> 
         <NavBar /> 
         <main className="content"> 

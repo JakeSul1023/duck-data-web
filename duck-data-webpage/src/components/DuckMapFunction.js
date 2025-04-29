@@ -10,7 +10,6 @@ import {
   BitmapLayer,
   GeoJsonLayer,
   TextLayer,
-  LineLayer
 } from "@deck.gl/layers";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import {
@@ -60,7 +59,7 @@ export default function DuckMapFunction() {
   const [hours, setHours] = useState([]);
   const [idx, setIdx] = useState(0);
   const [play, setPlay] = useState(false);
-  const [pick, setPick] = useState(null);
+  const [pick /* , setPick */] = useState(null); // Remove setPick
   const [view, setView] = useState(INITIAL);
   const [fly, setFly] = useState(null);
   const [city, setCity] = useState("");
@@ -252,7 +251,7 @@ const staticLayers = useMemo(() => {
   return [carto, flyFill, flyOutline].filter(Boolean);
 }, [fly]);
 
-const { currentHeat, forecastHeat } = useMemo(() => {
+const { /* currentHeat, */ forecastHeat } = useMemo(() => {
   const current = [];
   const forecast = [];
   curPos.forEach(p => {
@@ -267,67 +266,6 @@ const { currentHeat, forecastHeat } = useMemo(() => {
   });
   return { currentHeat: current, forecastHeat: forecast };
 }, [curPos, destPos, insideFlyway]);
-
-const flowHeat = useMemo(() => {
-  const points = [];
-  Object.values(byDuck).forEach(arr => {
-    arr.forEach(r => {
-      if (insideFlyway([r.forecastLon, r.forecastLat])) {
-        points.push({ position: [r.forecastLon, r.forecastLat], weight: 1 });
-      }
-      if (insideFlyway([r.startLon, r.startLat])) {
-        points.push({ position: [r.startLon, r.startLat], weight: 1 });
-      }
-    });
-  });
-  return points;
-}, [byDuck, insideFlyway]);
-
-const allFlowPoints = useMemo(() => {
-  const points = [];
-  Object.values(byDuck).forEach(arr => {
-    arr.forEach(r => {
-      if (
-        insideFlyway([r.startLon, r.startLat]) &&
-        insideFlyway([r.forecastLon, r.forecastLat])
-      ) {
-        // Interpolate 10 points along the path
-        for (let f = 0; f <= 1; f += 0.02) {
-          const lat = r.startLat + (r.forecastLat - r.startLat) * f;
-          const lon = r.startLon + (r.forecastLon - r.startLon) * f;
-          points.push({ position: [lon, lat], weight: 1 });
-        }
-      }
-    });
-  });
-  return points;
-}, [byDuck, insideFlyway]);
-
-const flowVector = useMemo(() => {
-  if (!allFlowPoints.length) return null;
-  // Calculate centroid
-  let sumLat = 0, sumLon = 0;
-  allFlowPoints.forEach(p => {
-    sumLon += p.position[0];
-    sumLat += p.position[1];
-  });
-  const center = [sumLon / allFlowPoints.length, sumLat / allFlowPoints.length];
-
-  // Calculate average movement vector (from start to forecast)
-  let dx = 0, dy = 0, n = 0;
-  Object.values(byDuck).forEach(arr => {
-    arr.forEach(r => {
-      dx += (r.forecastLon - r.startLon);
-      dy += (r.forecastLat - r.startLat);
-      n++;
-    });
-  });
-  if (n === 0) return null;
-  // Normalize vector for display
-  const scale = 2; // Adjust for visual length
-  const vec = [center[0] + dx / n * scale, center[1] + dy / n * scale];
-  return { start: center, end: vec };
-}, [allFlowPoints, byDuck]);
 
 const stagnantDucks = useMemo(() => {
   const stagnant = [];
@@ -369,17 +307,6 @@ const dynamicLayers = useMemo(() => {
       getPosition: [forecastHeat],
       getWeight: [forecastHeat]
     }
-  });
-
-  // Flow vector arrow
-  const flowArrow = flowVector && new LineLayer({
-    id: "flow-arrow",
-    data: [flowVector],
-    getSourcePosition: d => d.start,
-    getTargetPosition: d => d.end,
-    getColor: [255, 140, 0, 220],
-    getWidth: 6,
-    pickable: false
   });
 
   // Movement paths
@@ -424,7 +351,7 @@ const dynamicLayers = useMemo(() => {
     trips,
     ...(label ? [label] : [])
   ];
-}, [allFlowPoints, flowVector, pathData, now, curPos, pick, stagnantDucks, forecastHeat]);
+}, [pathData, now, curPos, pick, stagnantDucks, forecastHeat]);
 
 const layers = useMemo(() => [
   ...staticLayers,
@@ -551,67 +478,6 @@ const layers = useMemo(() => [
           Tracking {Object.keys(byDuck).length} ducks within Mississippi Flyway
         </Typography>
       </div>
-
-      {/* Flow Arrow Legend */}
-      {flowVector && (() => {
-        // Calculate intensity (average movement magnitude)
-        const dx = flowVector.end[0] - flowVector.start[0];
-        const dy = flowVector.end[1] - flowVector.start[1];
-        const magnitude = Math.sqrt(dx * dx + dy * dy);
-      
-        // Map magnitude to arrow length and color
-        const minLen = 10, maxLen = 18;
-        const minMag = 0.1, maxMag = 2.5; // tune as needed
-        const len = Math.max(minLen, Math.min(maxLen, minLen + (maxLen - minLen) * ((magnitude - minMag) / (maxMag - minMag))));
-        // Clamp and interpolate color from orange to dark orange
-        const colorVal = Math.max(140, Math.min(255, 140 + 115 * ((magnitude - minMag) / (maxMag - minMag))));
-        const color = `rgb(255, ${Math.round(colorVal)}, 0)`;
-      
-        // Normalize direction for consistent arrow
-        const norm = Math.sqrt(dx * dx + dy * dy) || 1;
-        const ux = dx / norm, uy = -dy / norm; // SVG y axis is down
-      
-        // Arrow start and end in SVG coordinates
-        const cx = 20, cy = 20;
-        const ex = cx + ux * len;
-        const ey = cy + uy * len;
-      
-        return (
-          <div style={{
-            position: "absolute",
-            bottom: 20,
-            right: 20,
-            width: 70,
-            height: 70,
-            background: "rgba(255,255,255,0.95)",
-            borderRadius: 8,
-            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10
-          }}>
-            <div style={{ fontSize: 11, color: "#333", marginBottom: 2 }}>Trajectory</div>
-            <svg width={40} height={40} style={{ display: "block" }}>
-              <defs>
-                <marker id="arrowhead" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth">
-                  <polygon points="0 0, 7 3.5, 0 7" fill={color} />
-                </marker>
-              </defs>
-              <line
-                x1={cx}
-                y1={cy}
-                x2={ex}
-                y2={ey}
-                stroke={color}
-                strokeWidth={3}
-                markerEnd="url(#arrowhead)"
-              />
-            </svg>
-          </div>
-        );
-      })()}
 
       {now && (() => {
   const month = now.getMonth() + 1;
