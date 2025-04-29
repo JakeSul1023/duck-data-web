@@ -9,7 +9,8 @@ import {
   ScatterplotLayer,
   BitmapLayer,
   GeoJsonLayer,
-  TextLayer
+  TextLayer,
+  LineLayer
 } from "@deck.gl/layers";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
 import {
@@ -145,6 +146,14 @@ useEffect(() => {
     });
   }, [hours, selectedDay]);
 
+  const filtered6HourIdxs = useMemo(() => {
+    // Only keep indices where the hour is divisible by 6
+    return filteredHours
+      .map((t, i) => ({ t, i }))
+      .filter(({ t }) => new Date(t).getHours() % 6 === 0)
+      .map(({ i }) => i);
+  }, [filteredHours]);
+
   const now = useMemo(
     () => (filteredHours.length ? new Date(filteredHours[Math.min(idx, filteredHours.length - 1)]) : null),
     [filteredHours, idx]
@@ -152,13 +161,17 @@ useEffect(() => {
 
   useEffect(() => {
     let timer;
-    if (play && filteredHours.length) {
+    if (play && filtered6HourIdxs.length) {
       timer = setTimeout(() => {
-        setIdx(i => (i + 1) % filteredHours.length);
-      }, 100); 
+        setIdx(prevIdx => {
+          const current6Idx = filtered6HourIdxs.findIndex(i => i === prevIdx);
+          const next6Idx = (current6Idx + 1) % filtered6HourIdxs.length;
+          return filtered6HourIdxs[next6Idx];
+        });
+      }, 100);
     }
     return () => timer && clearTimeout(timer);
-  }, [play, filteredHours, idx]);
+  }, [play, filtered6HourIdxs, idx]);
 
   useEffect(() => {
     if (
@@ -255,43 +268,121 @@ const { currentHeat, forecastHeat } = useMemo(() => {
   return { currentHeat: current, forecastHeat: forecast };
 }, [curPos, destPos, insideFlyway]);
 
+const flowHeat = useMemo(() => {
+  const points = [];
+  Object.values(byDuck).forEach(arr => {
+    arr.forEach(r => {
+      if (insideFlyway([r.forecastLon, r.forecastLat])) {
+        points.push({ position: [r.forecastLon, r.forecastLat], weight: 1 });
+      }
+      if (insideFlyway([r.startLon, r.startLat])) {
+        points.push({ position: [r.startLon, r.startLat], weight: 1 });
+      }
+    });
+  });
+  return points;
+}, [byDuck, insideFlyway]);
+
+const allFlowPoints = useMemo(() => {
+  const points = [];
+  Object.values(byDuck).forEach(arr => {
+    arr.forEach(r => {
+      if (
+        insideFlyway([r.startLon, r.startLat]) &&
+        insideFlyway([r.forecastLon, r.forecastLat])
+      ) {
+        // Interpolate 10 points along the path
+        for (let f = 0; f <= 1; f += 0.02) {
+          const lat = r.startLat + (r.forecastLat - r.startLat) * f;
+          const lon = r.startLon + (r.forecastLon - r.startLon) * f;
+          points.push({ position: [lon, lat], weight: 1 });
+        }
+      }
+    });
+  });
+  return points;
+}, [byDuck, insideFlyway]);
+
+const flowVector = useMemo(() => {
+  if (!allFlowPoints.length) return null;
+  // Calculate centroid
+  let sumLat = 0, sumLon = 0;
+  allFlowPoints.forEach(p => {
+    sumLon += p.position[0];
+    sumLat += p.position[1];
+  });
+  const center = [sumLon / allFlowPoints.length, sumLat / allFlowPoints.length];
+
+  // Calculate average movement vector (from start to forecast)
+  let dx = 0, dy = 0, n = 0;
+  Object.values(byDuck).forEach(arr => {
+    arr.forEach(r => {
+      dx += (r.forecastLon - r.startLon);
+      dy += (r.forecastLat - r.startLat);
+      n++;
+    });
+  });
+  if (n === 0) return null;
+  // Normalize vector for display
+  const scale = 2; // Adjust for visual length
+  const vec = [center[0] + dx / n * scale, center[1] + dy / n * scale];
+  return { start: center, end: vec };
+}, [allFlowPoints, byDuck]);
+
+const stagnantDucks = useMemo(() => {
+  const stagnant = [];
+  Object.values(byDuck).forEach(arr => {
+    arr.forEach(r => {
+      if (
+        r.startLat === r.forecastLat &&
+        r.startLon === r.forecastLon &&
+        insideFlyway([r.startLon, r.startLat])
+      ) {
+        stagnant.push({ position: [r.startLon, r.startLat], weight: 1 });
+      }
+    });
+  });
+  return stagnant;
+}, [byDuck, insideFlyway]);
+
 const dynamicLayers = useMemo(() => {
-  // Red for current, blue for forecast
-  const RED_COLORS = [
-    [255, 0, 0, 0],
-    [255, 0, 0, 120],
-    [255, 0, 0, 255]
-  ];
-  const BLUE_COLORS = [
+  // Blue gradient for movement heatmap
+  const BLUE_GRADIENT = [
     [0, 0, 255, 0],
     [0, 0, 255, 120],
     [0, 0, 255, 255]
   ];
 
-  const currentHeatmap = new HeatmapLayer({
-    id: "current-heatmap",
-    data: currentHeat,
-    getPosition: d => d.position,
-    getWeight: d => d.weight,
-    radiusPixels: 0,
-    colorRange: RED_COLORS,
-    intensity: 0,
-    threshold: .08,
-    parameters: { depthTestDisable: true }
-  });
-
-  const forecastHeatmap = new HeatmapLayer({
-    id: "forecast-heatmap",
+  // Single movement heatmap
+  const movementHeatmap = new HeatmapLayer({
+    id: "movement-heatmap",
     data: forecastHeat,
     getPosition: d => d.position,
     getWeight: d => d.weight,
-    radiusPixels: 100,
-    colorRange: BLUE_COLORS,
-    intensity: 1,
-    threshold: 0.08,
-    parameters: { depthTestDisable: true }
+    radiusPixels: 60,
+    colorRange: BLUE_GRADIENT,
+    intensity: 1.5,
+    threshold: 0.03,
+    parameters: { depthTestDisable: true },
+    pickable: false, // Explicitly set
+    updateTriggers: {
+      getPosition: [forecastHeat],
+      getWeight: [forecastHeat]
+    }
   });
 
+  // Flow vector arrow
+  const flowArrow = flowVector && new LineLayer({
+    id: "flow-arrow",
+    data: [flowVector],
+    getSourcePosition: d => d.start,
+    getTargetPosition: d => d.end,
+    getColor: [255, 140, 0, 220],
+    getWidth: 6,
+    pickable: false
+  });
+
+  // Movement paths
   const trips = new TripsLayer({
     id: "paths",
     data: pathData,
@@ -304,22 +395,7 @@ const dynamicLayers = useMemo(() => {
     parameters: { depthTestDisable: true }
   });
 
-  const points = new ScatterplotLayer({
-    id: "points",
-    data: curPos,
-    getPosition: d => [d.lon, d.lat],
-    getRadius: d => d.sel ? 3 : 1,
-    radiusMinPixels: d => d.sel ? 3 : 1,
-    radiusMaxPixels: d => d.sel ? 6 : 3,
-    getFillColor: d => d.sel ? [255, 165, 0, 200] : [0, 0, 0, 150],
-    stroked: true,
-    getLineColor: d => d.sel ? [255, 255, 255, 255] : [255, 255, 255, 0],
-    lineWidthMinPixels: 1,
-    pickable: true,
-    onClick: info => info.object && setPick(info.object.duck),
-    parameters: { depthTestDisable: true }
-  });
-
+  // Optional label for selected duck
   const label = pick && new TextLayer({
     id: "label",
     data: curPos.filter(d => d.duck === pick),
@@ -332,14 +408,23 @@ const dynamicLayers = useMemo(() => {
     parameters: { depthTestDisable: true }
   });
 
+  const stagnantLayer = new ScatterplotLayer({
+    id: "stagnant-ducks",
+    data: stagnantDucks,
+    getPosition: d => d.position,
+    getRadius: 5, // smaller
+    getFillColor: [128, 0, 128, 120], // more transparent
+    stroked: false, // no white outline
+    pickable: false
+  });
+
   return [
-    currentHeatmap,
-    forecastHeatmap,
+    movementHeatmap,
+    stagnantLayer,
     trips,
-    points,
     ...(label ? [label] : [])
   ];
-}, [currentHeat, forecastHeat, pathData, curPos, pick, now]);
+}, [allFlowPoints, flowVector, pathData, now, curPos, pick, stagnantDucks, forecastHeat]);
 
 const layers = useMemo(() => [
   ...staticLayers,
@@ -447,18 +532,153 @@ const layers = useMemo(() => [
         <Slider
           size="small"
           min={0}
-          max={Math.max(0, filteredHours.length - 1)}
-          value={idx}
-          onChange={(_, v) => { setIdx(v); setPlay(false); }}
-          disabled={isLoading || !filteredHours.length}
+          max={Math.max(0, filtered6HourIdxs.length - 1)}
+          value={filtered6HourIdxs.findIndex(i => i === idx)}
+          onChange={(_, v) => {
+            setIdx(filtered6HourIdxs[v]);
+            setPlay(false);
+          }}
+          disabled={isLoading || !filtered6HourIdxs.length}
           valueLabelDisplay="auto"
-          valueLabelFormat={i => i < 0 || i >= filteredHours.length ? "" : fmt(new Date(filteredHours[i]))}
+          valueLabelFormat={i =>
+            i < 0 || i >= filtered6HourIdxs.length
+              ? ""
+              : fmt(new Date(filteredHours[filtered6HourIdxs[i]]))
+          }
         />
 
         <Typography variant="caption" color="textSecondary">
           Tracking {Object.keys(byDuck).length} ducks within Mississippi Flyway
         </Typography>
       </div>
+
+      {/* Flow Arrow Legend */}
+      {flowVector && (() => {
+        // Calculate intensity (average movement magnitude)
+        const dx = flowVector.end[0] - flowVector.start[0];
+        const dy = flowVector.end[1] - flowVector.start[1];
+        const magnitude = Math.sqrt(dx * dx + dy * dy);
+      
+        // Map magnitude to arrow length and color
+        const minLen = 10, maxLen = 18;
+        const minMag = 0.1, maxMag = 2.5; // tune as needed
+        const len = Math.max(minLen, Math.min(maxLen, minLen + (maxLen - minLen) * ((magnitude - minMag) / (maxMag - minMag))));
+        // Clamp and interpolate color from orange to dark orange
+        const colorVal = Math.max(140, Math.min(255, 140 + 115 * ((magnitude - minMag) / (maxMag - minMag))));
+        const color = `rgb(255, ${Math.round(colorVal)}, 0)`;
+      
+        // Normalize direction for consistent arrow
+        const norm = Math.sqrt(dx * dx + dy * dy) || 1;
+        const ux = dx / norm, uy = -dy / norm; // SVG y axis is down
+      
+        // Arrow start and end in SVG coordinates
+        const cx = 20, cy = 20;
+        const ex = cx + ux * len;
+        const ey = cy + uy * len;
+      
+        return (
+          <div style={{
+            position: "absolute",
+            bottom: 20,
+            right: 20,
+            width: 70,
+            height: 70,
+            background: "rgba(255,255,255,0.95)",
+            borderRadius: 8,
+            boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 10
+          }}>
+            <div style={{ fontSize: 11, color: "#333", marginBottom: 2 }}>Trajectory</div>
+            <svg width={40} height={40} style={{ display: "block" }}>
+              <defs>
+                <marker id="arrowhead" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto" markerUnits="strokeWidth">
+                  <polygon points="0 0, 7 3.5, 0 7" fill={color} />
+                </marker>
+              </defs>
+              <line
+                x1={cx}
+                y1={cy}
+                x2={ex}
+                y2={ey}
+                stroke={color}
+                strokeWidth={3}
+                markerEnd="url(#arrowhead)"
+              />
+            </svg>
+          </div>
+        );
+      })()}
+
+      {now && (() => {
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+
+  let status = "";
+  let message = "";
+
+  if ((month === 1) || (month === 2)) {
+    status = "❄️ Off (Wintering)";
+    message = "Stationary in southern wetlands (Gulf Coast, Arkansas, Mississippi).";
+  } else if (month === 3) {
+    status = "🌱 On (Early spring migration starts)";
+    message = "Small early northward movements; ducks prepping to leave winter grounds.";
+  } else if (month === 4 && day <= 15) {
+    status = "🚀 On (Peak spring migration)";
+    message = "Big movements toward mid-latitudes and Canada.";
+  } else if ((month === 4 && day >= 16) || (month === 5)) {
+    status = "✈️ On (Finishing Spring Migration)";
+    message = "Ducks finishing movement into breeding grounds in northern U.S. and Canada.";
+  } else if ((month === 6) || (month === 7 && day <= 14)) {
+    status = "🐣 Off (Breeding/Nesting)";
+    message = "Stationary — ducks are nesting and raising ducklings.";
+  } else if (month === 7 && day >= 15) {
+    status = "🐣 Off (Still no migration)";
+    message = "Stationary — ducks molting (losing feathers, flightless).";
+  } else if (month === 8) {
+    status = "🪶 Off (Molting/Preparing)";
+    message = "Still not migrating; ducks regrowing feathers, prepping for fall migration.";
+  } else if (month === 9) {
+    status = "🍂 On (Fall Migration begins slowly)";
+    message = "First early southward movements, especially adult males.";
+  } else if (month === 10 && day <= 4) {
+    status = "🍂 On (Fall Migration begins slowly)";
+    message = "First early southward movements, especially adult males.";
+  } else if (month === 10 && day >= 5 && day <= 20) {
+    status = "🍁 On (Peak Fall Migration)";
+    message = "Big movement south down Mississippi River corridor.";
+  } else if ((month === 10 && day >= 21) || (month === 11)) {
+    status = "❄️ On (Late Fall Migration)";
+    message = "Remaining ducks move south, seeking open water, wetlands.";
+  } else if (month === 12) {
+    status = "❄️ Off (Wintering)";
+    message = "Stationary again in southern wintering areas.";
+  }
+
+  return (
+    <div style={{
+      position: "absolute",
+      top: 20,
+      right: 20,
+      background: status.includes("On") ? "rgba(0,180,0,0.92)" : "rgba(180,120,0,0.92)",
+      color: "#fff",
+      padding: "10px 16px",
+      borderRadius: 8,
+      boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+      fontSize: 14,
+      maxWidth: 300,
+      zIndex: 20
+    }}>
+      <b>{status}</b>
+      <div style={{ fontSize: 13, marginTop: 4 }}>
+        {message}
+      </div>
+    </div>
+  );
+})()}
     </div>
   );
 }
