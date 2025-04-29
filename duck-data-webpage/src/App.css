@@ -10,6 +10,10 @@ body {
   background-color: #e0c08a; /* Tan Background */
   color: #4A4A4A; /* Darker Gray Text (Readability) */
   line-height: 1.6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
 }
 
 .App {
@@ -74,4 +78,135 @@ a {
 a:hover {
   color: #A0522D; /* Slightly lighter Forest Green */
   text-decoration: underline;
+}
+
+/* Newsletter Form Styling */
+.home-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.nws-info-bar {
+  margin-bottom: 20px;
+  width: 100%;
+  text-align: center;
+}
+
+.nws-info-content h2 {
+  font-family: 'Merriweather', serif;
+  color: #A0522D;
+  margin: 0 auto;
+}
+
+.home-header {
+  margin-bottom: 30px;
+  width: 100%;
+  text-align: center;
+}
+
+.home-header h1 {
+  font-family: 'Merriweather', serif;
+  color: #A0522D;
+  margin: 0 auto;
+}
+
+.home-header p {
+  margin: 0 auto;
+  color: #5E5E5E;
+}
+
+.key-map-section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.key-map-content {
+  width: 500px; /* Adjusted width for better centering */
+  background-color: #f0e0c0; /* Lighter Tan Content Area */
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+
+.key-map-content h3 {
+  font-family: 'Merriweather', serif;
+  color: #A0522D;
+  margin-bottom: 20px;
+}
+
+.newsletter-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.form-field {
+  width: 100%;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.form-field label {
+  display: block;
+  font-size: 16px;
+  font-weight: 500;
+  color: #4A4A4A;
+  margin-bottom: 8px;
+}
+
+.form-field input {
+  width: 100%;
+  max-width: 400px; /* Larger width for inputs */
+  padding: 15px; /* Larger padding for height */
+  font-size: 18px; /* Larger font size */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-sizing: border-box;
+  font-family: 'Lato', sans-serif;
+}
+
+.form-field input.input-error {
+  border-color: #e74c3c;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: 5px;
+  text-align: center;
+  width: 100%;
+}
+
+.submit-button {
+  width: 100%;
+  max-width: 400px; /* Match input width */
+  padding: 15px;
+  font-size: 18px;
+  background-color: #8B4513; /* Darker Forest Green to match links */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-family: 'Lato', sans-serif;
+}
+
+.submit-button:hover {
+  background-color: #A0522D; /* Slightly lighter Forest Green */
+}
+
+.submit-button:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
 }
