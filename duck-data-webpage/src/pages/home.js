@@ -46,7 +46,7 @@ function Home() {
         <div className="key-map-content">
           <h2>Interactive Migration Map</h2>
           <p>
-            Observe duck migration patterns across North America. Use the map
+            Observe duck migration patterns across Mississippi Flyway. Use the map
             below to explore!
           </p>
           <div className="map-frame">
