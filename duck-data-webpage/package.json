@@ -2,7 +2,7 @@
   "name": "duck-data-webpage",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://jakesul1023.github.io/duck-data-web/",
+  "homepage": "https://www.moveduck.com",
   "dependencies": {
     "@craco/craco": "^7.1.0",
     "@deck.gl/aggregation-layers": "^9.1.11",
