@@ -96,25 +96,26 @@ const StyledLink = styled(Link)`
 
 // Hamburger Icon (Position adjusted for top right)
 const MenuIcon = styled.button`
-  display: none; // Hidden by default on larger screens
+  display: none;
   background: none;
   border: none;
   padding: 10px;
   cursor: pointer;
-  z-index: 1100; // Above potential dropdown content
+  z-index: 1100;
 
   span {
     display: block;
     width: 25px;
     height: 3px;
-    background-color: #fff; /* White hamburger */
+    background-color: #fff;
     margin: 5px 0;
     transition: background-color 0.3s ease;
   }
 
+  /* 👇 mobile overrides */
   @media (max-width: ${mobileBreakpoint}) {
-    display: block; // Show on mobile
-    /* No fixed positioning needed, it's part of the flex layout */
+    display: block;
+    margin-left: auto;   /* 🆕 pushes icon all the way to the right */
   }
 `;
 

@@ -396,7 +396,7 @@ const layers = useMemo(() => [
   }
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "600px" }}>
+    <div className="duckmap-container" style={{ position: "relative", width: "100%", height: "600px" }}>
       <DeckGL
         layers={layers}
         controller
@@ -408,11 +408,12 @@ const layers = useMemo(() => [
       />
 
       {/* Location Search */}
-      <div style={{
-        position: "absolute", top: 10, left: 10, width: "250px",
-        background: "rgba(255,255,255,0.9)", padding: 8,
-        borderRadius: 6, boxShadow: "0 2px 6px rgba(0,0,0,0.3)"
-      }}>
+      <div className="duckmap-search duckmap-overlay"
+        style={{
+          position: "absolute", top: 10, left: 10, width: "250px",
+          background: "rgba(255,255,255,0.9)", padding: 8,
+          borderRadius: 6, boxShadow: "0 2px 6px rgba(0,0,0,0.3)"
+        }}>
         <Box display="flex" gap={1}>
           <TextField
             size="small"
@@ -439,11 +440,12 @@ const layers = useMemo(() => [
       </div>
 
       {/* Controls */}
-      <div style={{
-        position: "absolute", bottom: 10, left: 10, width: 280,
-        background: "rgba(255,255,255,0.9)", padding: 12,
-        borderRadius: 6, boxShadow: "0 2px 6px rgba(0,0,0,0.3)"
-      }}>
+      <div className="duckmap-controls duckmap-overlay"
+        style={{
+          position: "absolute", bottom: 10, left: 10, width: 280,
+          background: "rgba(255,255,255,0.9)", padding: 12,
+          borderRadius: 6, boxShadow: "0 2px 6px rgba(0,0,0,0.3)"
+        }}>
         <Typography variant="subtitle2">{now ? fmt(now) : "Loading…"}</Typography>
         {pick && <Typography variant="body2" color="primary">Tracking Duck: {pick}</Typography>}
 
@@ -528,6 +530,7 @@ const layers = useMemo(() => [
 
         {avgVector && (
           <div
+            className="trajectory-legend" 
             style={{
               position: "absolute",
               right: 24,
@@ -624,19 +627,20 @@ const layers = useMemo(() => [
   }
 
   return (
-    <div style={{
-      position: "absolute",
-      top: 20,
-      right: 20,
-      background: status.includes("On") ? "rgba(0,180,0,0.92)" : "rgba(180,120,0,0.92)",
-      color: "#fff",
-      padding: "10px 16px",
-      borderRadius: 8,
-      boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-      fontSize: 14,
-      maxWidth: 300,
-      zIndex: 20
-    }}>
+    <div className="duckmap-status"
+      style={{
+        position: "absolute",
+        top: 20,
+        right: 20,
+        background: status.includes("On") ? "rgba(0,180,0,0.92)" : "rgba(180,120,0,0.92)",
+        color: "#fff",
+        padding: "10px 16px",
+        borderRadius: 8,
+        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+        fontSize: 14,
+        maxWidth: 300,
+        zIndex: 20
+      }}>
       <b>{status}</b>
       <div style={{ fontSize: 13, marginTop: 4 }}>
         {message}
