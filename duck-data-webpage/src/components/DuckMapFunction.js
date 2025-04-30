@@ -27,6 +27,7 @@ const interp = (aLat, aLon, bLat, bLon, f) => [
   aLat + (bLat - aLat) * f,
   aLon + (bLon - aLon) * f
 ];
+
 const fmt = d =>
   d.toLocaleDateString("en-US", {
     weekday: "short",
@@ -34,6 +35,7 @@ const fmt = d =>
     day: "numeric",
     hour: "2-digit"
   });
+
 function formatDay(ts) {
   const d = new Date(ts);
   return d.toLocaleDateString("en-US", {
@@ -44,17 +46,18 @@ function formatDay(ts) {
 }
 
 const MOBILE_BREAKPOINT = 600;               // px
-function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" && window.innerWidth <= breakpoint
+function useIsMobile(brk = MOBILE_BREAKPOINT) {
+  const [isMobile, setIsMobile] = React.useState(
+    typeof window !== "undefined" && window.innerWidth <= brk
   );
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+  React.useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= brk);
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [breakpoint]);
+  }, [brk]);
   return isMobile;
 }
+
 const INITIAL = {
   latitude: 41.9779,
   longitude: -91.6656,
@@ -64,10 +67,20 @@ const INITIAL = {
   pitch: 0,
   bearing: 0
 };
+
+
 const MIN_MOVE_DIST = 0.03; // Change this value as needed
 
 export default function DuckMapFunction() {
-  const isMobile = useIsMobile();           // ← detect phone / narrow screen
+  const isMobile = useIsMobile(); 
+  const initialView = useMemo(
+    () => ({
+      ...INITIAL,
+      minZoom: isMobile ? 2 : INITIAL.minZoom,   // farther out on mobile
+      maxZoom: isMobile ? 6 : INITIAL.maxZoom    // a bit closer in as well
+    }),
+    [isMobile]
+  );          // ← detect phone / narrow screen
   const [rows, setRows] = useState([]);
   const [hours, setHours] = useState([]);
   const [idx, setIdx] = useState(0);
@@ -334,7 +347,7 @@ const dynamicLayers = useMemo(() => {
     [0, 0, 255, 255]
   ];
 
-  const heatRadius = isMobile ? 225 : 290;
+  const heatRadius = isMobile ? 240 : 280;
 
   // Single movement heatmap
   const movementHeatmap = new HeatmapLayer({
@@ -343,7 +356,7 @@ const dynamicLayers = useMemo(() => {
     getPosition: d => d.position,
     getWeight: d => d.weight,
     radiusPixels: heatRadius,
-    intensity: isMobile ? 1.1 : 0.9,
+    intensity: isMobile ? 0.9 : 0.9,
     threshold: 0.001,
     colorRange: BLUE_GRADIENT,
     parameters: { depthTestDisable: true },
@@ -400,7 +413,6 @@ const layers = useMemo(
   [staticLayers, dynamicLayers]
 );
 
-/* ---------------- render ---------------- */
 if (error) {
   return (
     <Box p={3} textAlign="center">
@@ -420,8 +432,11 @@ return (
   >
     <DeckGL
       layers={layers}
-      controller
-      initialViewState={INITIAL}
+      controller={{
+        minZoom: isMobile ? 3.5 : INITIAL.minZoom,
+        maxZoom: isMobile ? 4.3 : INITIAL.maxZoom
+      }}
+      initialViewState={initialView}
       viewState={view}
       onViewStateChange={({ viewState }) => setView(viewState)}
       style={{ width: "100%", height: "100%" }}
