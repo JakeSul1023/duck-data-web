@@ -23,6 +23,9 @@ self.onmessage = function (e) {
     const sLonCol = table.getChild('start_lon');
     const fLatCol = table.getChild('forecast_lat');
     const fLonCol = table.getChild('forecast_lon');
+    if (![duckCol, stCol, ftCol, sLatCol, sLonCol, fLatCol, fLonCol].every(Boolean)) {
+      throw new Error("Missing one or more required columns in Arrow file.");
+    }
 
     for (let i = 0; i < table.numRows; i++) {
         let duck = duckCol.get(i);

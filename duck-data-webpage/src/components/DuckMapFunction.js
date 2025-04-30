@@ -1,5 +1,3 @@
-// src/components/DuckMapFunction.js
-
 import React, { useState, useEffect, useMemo } from "react";
 import { useRef } from "react";
 import { DeckGL } from "@deck.gl/react";
@@ -45,21 +43,22 @@ function formatDay(ts) {
 }
 
 const INITIAL = {
-  latitude: 36.28,
-  longitude: -89.42,
-  zoom: 3.5,
-  minZoom: 3.5,
-  maxZoom: 5,
+  latitude: 41.9779,
+  longitude: -91.6656,
+  zoom: 4,
+  minZoom: 4,
+  maxZoom: 4.5,
   pitch: 0,
   bearing: 0
 };
+const MIN_MOVE_DIST = 0.03; // Change this value as needed
 
 export default function DuckMapFunction() {
   const [rows, setRows] = useState([]);
   const [hours, setHours] = useState([]);
   const [idx, setIdx] = useState(0);
   const [play, setPlay] = useState(false);
-  const [pick /* , setPick */] = useState(null); // Remove setPick
+  const [pick /* , setPick */] = useState(null);
   const [view, setView] = useState(INITIAL);
   const [fly, setFly] = useState(null);
   const [city, setCity] = useState("");
@@ -112,6 +111,8 @@ useEffect(() => {
       const pt = { type: "Point", coordinates: [lon, lat] };
       return feats.some(feat => {
         try {
+          // Debug: Uncomment to see what is being checked
+          // console.log("Checking", pt, "in", feat);
           return booleanPointInPolygon(pt, feat);
         } catch (e) {
           return false;
@@ -146,7 +147,6 @@ useEffect(() => {
   }, [hours, selectedDay]);
 
   const filtered6HourIdxs = useMemo(() => {
-    // Only keep indices where the hour is divisible by 6
     return filteredHours
       .map((t, i) => ({ t, i }))
       .filter(({ t }) => new Date(t).getHours() % 6 === 0)
@@ -182,6 +182,28 @@ useEffect(() => {
     }
   }, [filteredHours, idx]);
 
+  const avgVector = useMemo(() => {
+    let dx = 0, dy = 0, n = 0;
+    Object.values(byDuck).forEach(arr => {
+      const row = arr.find(r =>
+        r.startTime <= (now?.getTime() ?? 0) &&
+        (now?.getTime() ?? 0) <= r.forecastTime
+      );
+      if (row) {
+        const dLon = row.forecastLon - row.startLon;
+        const dLat = row.forecastLat - row.startLat;
+        dx += dLon;
+        dy += dLat;
+        n++;
+      }
+    });
+    if (n === 0) return null;
+    const avgDx = dx / n;
+    const avgDy = dy / n;
+    const magnitude = Math.sqrt(avgDx * avgDx + avgDy * avgDy);
+    return { dx: avgDx, dy: avgDy, magnitude };
+  }, [byDuck, now]);
+
   const { departPos, destPos } = useMemo(() => {
     if (!now) return { departPos: [], destPos: [] };
     const dep = [], dst = [];
@@ -192,8 +214,15 @@ useEffect(() => {
       const span = row.forecastTime - row.startTime;
       const frac = span > 0 ? Math.min(1, Math.max(0, (now - row.startTime) / span)) : 0;
       const [cLat, cLon] = interp(row.startLat, row.startLon, row.forecastLat, row.forecastLon, frac);
-      dep.push({ duck: d, lat: row.startLat, lon: row.startLon, curLat: cLat, curLon: cLon, sel: d === pick });
-      dst.push({ duck: d, lat: row.forecastLat, lon: row.forecastLon, curLat: cLat, curLon: cLon, sel: d === pick });
+      // Calculate movement distance (simple Euclidean, for small distances)
+      const dist = Math.sqrt(
+        Math.pow(row.forecastLat - row.startLat, 2) +
+        Math.pow(row.forecastLon - row.startLon, 2)
+      );
+      if (dist >= MIN_MOVE_DIST) { // Use constant here
+        dep.push({ duck: d, lat: row.startLat, lon: row.startLon, curLat: cLat, curLon: cLon, sel: d === pick });
+        dst.push({ duck: d, lat: row.forecastLat, lon: row.forecastLon, curLat: cLat, curLon: cLon, sel: d === pick });
+      }
     }
     return { departPos: dep, destPos: dst };
   }, [now, byDuck, pick]);
@@ -297,10 +326,10 @@ const dynamicLayers = useMemo(() => {
     data: forecastHeat,
     getPosition: d => d.position,
     getWeight: d => d.weight,
-    radiusPixels: 60,
+    radiusPixels: 300,
     colorRange: BLUE_GRADIENT,
-    intensity: 1.5,
-    threshold: 0.03,
+    intensity: .9,
+    threshold: .001,
     parameters: { depthTestDisable: true },
     pickable: false, // Explicitly set
     updateTriggers: {
@@ -402,7 +431,7 @@ const layers = useMemo(() => [
                   ...v,
                   latitude: +d[0].lat,
                   longitude: +d[0].lon,
-                  zoom: 5
+                  zoom: 4.5
                 }));
               });
           }}>Go</Button>
@@ -474,10 +503,80 @@ const layers = useMemo(() => [
           }
         />
 
+        {/* Heatmap Legend merged here */}
+        <Box display="flex" alignItems="center" gap={1} mt={1}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #00f 60%, #fff 100%)",
+              marginRight: 6,
+              border: "1px solid #00f"
+            }}
+          />
+          <span style={{ fontSize: 12, color: "#0033cc", fontWeight: 500 }}>
+            Blue = forecasted duck migrations
+          </span>
+        </Box>
+
         <Typography variant="caption" color="textSecondary">
-          Tracking {Object.keys(byDuck).length} ducks within Mississippi Flyway
+          Tracking {Object.keys(byDuck).length} ducks in the Mississippi Flyway
         </Typography>
-      </div>
+        </div> 
+
+        {avgVector && (
+          <div
+            style={{
+              position: "absolute",
+              right: 24,
+              bottom: 24,
+              background: "rgba(255,255,255,0.92)",
+              borderRadius: 8,
+              boxShadow: "0 2px 6px rgba(0,0,0,0.18)",
+              padding: "14px 22px", // Increased padding
+              zIndex: 30,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              minWidth: 80 // Increased minWidth
+            }}
+          >
+            <span style={{ fontSize: 15, color: "#555", marginBottom: 6 }}>Avg. Trajectory</span>
+            {(() => {
+              // Arrow length and color scale
+              const minLen = 28, maxLen = 54; // Increased size
+              const minMag = 0, maxMag = 0.5;
+              const mag = Math.min(avgVector.magnitude, maxMag);
+              const arrowLen = minLen + (maxLen - minLen) * (mag - minMag) / (maxMag - minMag);
+
+              // Tan: rgb(255, 165, 64), Brown: rgb(120, 70, 15)
+              const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+              const t = (mag - minMag) / (maxMag - minMag);
+              const r = lerp(255, 120, t);
+              const g = lerp(165, 70, t);
+              const b = lerp(64, 15, t);
+              const arrowColor = `rgb(${r},${g},${b})`;
+
+              // Arrow points, scaled by arrowLen
+              const scale = arrowLen / 36;
+              const points = [
+                [18 * scale, 6 * scale],
+                [30 * scale, 30 * scale],
+                [18 * scale, 24 * scale],
+                [6 * scale, 30 * scale]
+              ].map(p => p.join(",")).join(" ");
+
+              return (
+                <svg width={arrowLen} height={arrowLen} style={{ display: "block", transform: `rotate(${Math.atan2(avgVector.dy, avgVector.dx) * 180 / Math.PI}deg)` }}>
+                  <polygon points={points} fill={arrowColor} />
+                </svg>
+              );
+            })()}
+          </div>
+        )}
+
 
       {now && (() => {
   const month = now.getMonth() + 1;
