@@ -22,6 +22,7 @@ import {
   InputLabel
 } from "@mui/material";
 
+
 const interp = (aLat, aLon, bLat, bLon, f) => [
   aLat + (bLat - aLat) * f,
   aLon + (bLon - aLon) * f
@@ -42,6 +43,18 @@ function formatDay(ts) {
   });
 }
 
+const MOBILE_BREAKPOINT = 600;               // px
+function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" && window.innerWidth <= breakpoint
+  );
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
 const INITIAL = {
   latitude: 41.9779,
   longitude: -91.6656,
@@ -54,6 +67,7 @@ const INITIAL = {
 const MIN_MOVE_DIST = 0.03; // Change this value as needed
 
 export default function DuckMapFunction() {
+  const isMobile = useIsMobile();           // ← detect phone / narrow screen
   const [rows, setRows] = useState([]);
   const [hours, setHours] = useState([]);
   const [idx, setIdx] = useState(0);
@@ -320,22 +334,21 @@ const dynamicLayers = useMemo(() => {
     [0, 0, 255, 255]
   ];
 
+  const heatRadius = isMobile ? 225 : 290;
+
   // Single movement heatmap
   const movementHeatmap = new HeatmapLayer({
     id: "movement-heatmap",
     data: forecastHeat,
     getPosition: d => d.position,
     getWeight: d => d.weight,
-    radiusPixels: 300,
+    radiusPixels: heatRadius,
+    intensity: isMobile ? 1.1 : 0.9,
+    threshold: 0.001,
     colorRange: BLUE_GRADIENT,
-    intensity: .9,
-    threshold: .001,
     parameters: { depthTestDisable: true },
-    pickable: false, // Explicitly set
-    updateTriggers: {
-      getPosition: [forecastHeat],
-      getWeight: [forecastHeat]
-    }
+    pickable: false,
+    updateTriggers: { radiusPixels: heatRadius, forecastHeat }
   });
 
   // Movement paths
@@ -380,32 +393,41 @@ const dynamicLayers = useMemo(() => {
     trips,
     ...(label ? [label] : [])
   ];
-}, [pathData, now, curPos, pick, stagnantDucks, forecastHeat]);
+}, [pathData, now, curPos, pick, stagnantDucks, forecastHeat, isMobile]);
 
-const layers = useMemo(() => [
-  ...staticLayers,
-  ...dynamicLayers
-], [staticLayers, dynamicLayers]);
+const layers = useMemo(
+  () => [...staticLayers, ...dynamicLayers],
+  [staticLayers, dynamicLayers]
+);
 
-  if (error) {
-    return (
-      <Box p={3} textAlign="center">
-        <Typography color="error">{error}</Typography>
-      </Box>
-    );
-  }
-
+/* ---------------- render ---------------- */
+if (error) {
   return (
-    <div className="duckmap-container" style={{ position: "relative", width: "100%", height: "600px" }}>
-      <DeckGL
-        layers={layers}
-        controller
-        initialViewState={INITIAL}
-        viewState={view}
-        onViewStateChange={({ viewState }) => setView(viewState)}
-        style={{ width: "100%", height: "100%" }}
-        getCursor={({ isDragging }) => (isDragging ? "grabbing" : "default")}
-      />
+    <Box p={3} textAlign="center">
+      <Typography color="error">{error}</Typography>
+    </Box>
+  );
+}
+
+return (
+  <div
+    className="duckmap-container"
+    style={{
+      position: "relative",
+      width: "100%",
+      height: isMobile ? "70vh" : "600px"
+    }}
+  >
+    <DeckGL
+      layers={layers}
+      controller
+      initialViewState={INITIAL}
+      viewState={view}
+      onViewStateChange={({ viewState }) => setView(viewState)}
+      style={{ width: "100%", height: "100%" }}
+      getCursor={({ isDragging }) => (isDragging ? "grabbing" : "default")}
+      useDevicePixels={window.devicePixelRatio}
+    />
 
       {/* Location Search */}
       <div className="duckmap-search duckmap-overlay"
