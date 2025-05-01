@@ -341,13 +341,24 @@ const stagnantDucks = useMemo(() => {
 
 const dynamicLayers = useMemo(() => {
   // Blue gradient for movement heatmap
-  const BLUE_GRADIENT = [
+  const DESKTOP_BLUE = [    
     [0, 0, 255, 0],
     [0, 0, 255, 120],
     [0, 0, 255, 255]
   ];
 
-  const heatRadius = isMobile ? 240 : 280;
+  const MOBILE_BLUE_SOFT = [
+    [0, 0, 255,   0],
+    [0, 0, 255,  40],
+    [0, 0, 255,  80],
+    [0, 0, 255, 120],
+    [0, 0, 255, 170],
+    [0, 0, 255, 220],
+    [0, 0, 255, 255]
+  ];
+
+  const colorRange = isMobile ? MOBILE_BLUE_SOFT : DESKTOP_BLUE;
+  const heatRadius = isMobile ? 220 : 270;
 
   // Single movement heatmap
   const movementHeatmap = new HeatmapLayer({
@@ -358,7 +369,7 @@ const dynamicLayers = useMemo(() => {
     radiusPixels: heatRadius,
     intensity: isMobile ? 0.9 : 0.9,
     threshold: 0.001,
-    colorRange: BLUE_GRADIENT,
+    colorRange,
     parameters: { depthTestDisable: true },
     pickable: false,
     updateTriggers: { radiusPixels: heatRadius, forecastHeat }
