@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-
+ 
 // --- Constants ---
-const navbarHeight = "60px"; 
-const mobileBreakpoint = "768px"; 
-
+const navbarHeight = "60px";
+const mobileBreakpoint = "768px";
+ 
 // --- Styled Components ---
-
+ 
 // Main Navigation Container (Top Bar)
 const Nav = styled.nav`
   background-color:rgb(38, 72, 4); /* Darker Forest Green */
@@ -25,7 +25,7 @@ const Nav = styled.nav`
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
   font-family: 'Lato', sans-serif;
 `;
-
+ 
 const LogoTitle = styled(Link)` // Make it a link to home
   color: #fff;
   font-size: 1.5em;
@@ -34,7 +34,7 @@ const LogoTitle = styled(Link)` // Make it a link to home
   margin-right: auto; // Pushes links to the right
   font-family: 'Lato', sans-serif;
   letter-spacing: 0.5px; /* Add subtle letter spacing */
-
+ 
   @media (max-width: ${mobileBreakpoint}) {
      position: absolute;
      left: 15px;
@@ -42,14 +42,14 @@ const LogoTitle = styled(Link)` // Make it a link to home
      transform: translateY(-50%);
   }
 `;
-
-
+ 
+ 
 // Links Container (adjust for horizontal layout and mobile dropdown)
 const LinksContainer = styled.div`
   display: flex; // Horizontal layout for links
   align-items: center;
   font-family: 'Lato', sans-serif;
-
+ 
   @media (max-width: ${mobileBreakpoint}) {
     display: ${props => (props.isOpen ? 'flex' : 'none')}; // Control visibility
     flex-direction: column; // Stack links vertically on mobile
@@ -63,7 +63,7 @@ const LinksContainer = styled.div`
     border-top: 1px solid rgba(255, 255, 255, 0.1); // Separator line - white
   }
 `;
-
+ 
 // Navigation Links
 const StyledLink = styled(Link)`
   color: #fff; /* White text */
@@ -76,12 +76,12 @@ const StyledLink = styled(Link)`
   margin: 0 0.5rem; // Horizontal margin between links
   display: inline-block; // Display links side-by-side
   font-family: 'Lato', sans-serif;
-
+ 
   &:hover {
     background-color: rgba(255, 255, 255, 0.2); /* Softer white hover */
     color: #fff;
   }
-
+ 
   @media (max-width: ${mobileBreakpoint}) {
     display: block; // Stack links in mobile dropdown
     width: 90%; // Make links take most of the dropdown width
@@ -89,11 +89,11 @@ const StyledLink = styled(Link)`
     text-align: center; // Center text
     padding: 0.8rem 1rem; // Adjust padding for vertical stacking
   }
-
+ 
   /* &.active { ... } */ // Optional active styling
 `;
-
-
+ 
+ 
 // Hamburger Icon (Position adjusted for top right)
 const MenuIcon = styled.button`
   display: none;
@@ -102,7 +102,7 @@ const MenuIcon = styled.button`
   padding: 10px;
   cursor: pointer;
   z-index: 1100;
-
+ 
   span {
     display: block;
     width: 25px;
@@ -111,22 +111,22 @@ const MenuIcon = styled.button`
     margin: 5px 0;
     transition: background-color 0.3s ease;
   }
-
+ 
   /* 👇 mobile overrides */
   @media (max-width: ${mobileBreakpoint}) {
     display: block;
     margin-left: auto;   /* 🆕 pushes icon all the way to the right */
   }
 `;
-
-
+ 
+ 
 // --- Component ---
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
-
+ 
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
-
+ 
   return (
     <Nav>
       <LogoTitle to="/" onClick={closeMenu}>moveduck.</LogoTitle> {/* Added Logo/Title */}
@@ -138,9 +138,11 @@ const NavBar = () => {
       <LinksContainer isOpen={isOpen}>
         <StyledLink to="/" onClick={closeMenu}>Home</StyledLink>
         <StyledLink to="/about" onClick={closeMenu}>About Us</StyledLink>
+        <StyledLink to="/learnmore" onClick={closeMenu}>Learn More</StyledLink>
+ 
       </LinksContainer>
     </Nav>
   );
 };
-
+ 
 export default NavBar;
