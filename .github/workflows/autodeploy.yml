@@ -1,0 +1,39 @@
+name: Auto Deploy Website
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - duck-data-webpage/public/Week_prediction.arrow
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: cd duck-data-webpage && npm install
+
+      - name: Build the React app
+        run: cd duck-data-webpage && npm run build
+
+      - name: List entire build folder contents
+        run: find duck-data-webpage/build
+      
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./duck-data-webpage/build
+          publish_branch: moveduck-ghp
+          force_orphan: true
