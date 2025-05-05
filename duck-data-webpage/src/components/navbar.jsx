@@ -7,7 +7,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
-
+import logo from '../pages/assets/moveduck.png';
 // --- Constants ---
 const navbarHeight = "60px";
 const mobileBreakpoint = "768px";
@@ -32,23 +32,6 @@ const Nav = styled.nav`
   font-family: 'Lato', sans-serif;
 `;
 
-// Logo/title link (left side)
-const LogoTitle = styled(Link)` // Make it a link to home
-  color: #fff;
-  font-size: 1.5em;
-  font-weight: 600; /* Slightly bolder */
-  text-decoration: none;
-  margin-right: auto; // Pushes links to the right
-  font-family: 'Lato', sans-serif;
-  letter-spacing: 0.5px; /* Add subtle letter spacing */
- 
-  @media (max-width: ${mobileBreakpoint}) {
-     position: absolute;
-     left: 15px;
-     top: 50%;
-     transform: translateY(-50%);
-  }
-`;
 
 // Container for navigation links (horizontal or dropdown)
 const LinksContainer = styled.div`
@@ -138,7 +121,27 @@ const NavBar = () => {
   return (
     <Nav>
       {/* Logo/title, always links to home */}
-      <LogoTitle to="/" onClick={closeMenu}>moveduck.</LogoTitle>
+      <button
+        onClick={closeMenu}
+        style={{
+          background: "none",
+          border: "none",
+          padding: 0,
+          marginRight: "auto",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center"
+        }}
+        aria-label="Home"
+      >
+        <Link to="/" style={{ display: "flex", alignItems: "center" }}>
+          <img
+            src={logo}
+            alt="Moveduck Logo"
+            style={{ height: "59px", width: "200px", objectFit: "contain" }}
+          />
+        </Link>
+      </button>
       {/* Hamburger icon for mobile */}
       <MenuIcon onClick={toggleMenu} aria-label="Toggle menu">
         <span />

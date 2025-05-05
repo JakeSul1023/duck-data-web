@@ -21,5 +21,15 @@
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#3A2E27",
-  "background_color": "#2F3E2F"
+  "background_color": "#2F3E2F",
+  "link": [
+    {
+      "rel": "icon",
+      "href": "%PUBLIC_URL%/3.png"
+    },
+    {
+      "rel": "icon",
+      "href": "%PUBLIC_URL%/3.png"
+    }
+  ]
 }
