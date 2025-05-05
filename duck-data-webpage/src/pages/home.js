@@ -1,3 +1,9 @@
+/*
+  Author: Jacob Sullivan
+  Date: 2025-05-04
+  Descritpion: This file contains the main home page component for the Duck Data Webpage.
+  It includes a header, an interactive map, and sections about the project, styled using CSS.
+*/
 import React, { useState, useEffect } from "react";
 import DuckMapFunction from "../components/DuckMapFunction";
 import "../App.css";

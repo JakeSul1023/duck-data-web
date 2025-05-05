@@ -1,13 +1,19 @@
+/*
+  Author: Jacob Sullivan
+  Date: 2025-05-04
+  Descritpion: This file contains the main navigation bar component for the Duck Data Webpage.
+  It includes a responsive design with a hamburger menu for mobile devices, styled using styled-components.
+*/
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
- 
+
 // --- Constants ---
 const navbarHeight = "60px";
 const mobileBreakpoint = "768px";
- 
+
 // --- Styled Components ---
- 
+
 // Main Navigation Container (Top Bar)
 const Nav = styled.nav`
   background-color:rgb(38, 72, 4); /* Darker Forest Green */
@@ -25,7 +31,8 @@ const Nav = styled.nav`
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25);
   font-family: 'Lato', sans-serif;
 `;
- 
+
+// Logo/title link (left side)
 const LogoTitle = styled(Link)` // Make it a link to home
   color: #fff;
   font-size: 1.5em;
@@ -42,9 +49,8 @@ const LogoTitle = styled(Link)` // Make it a link to home
      transform: translateY(-50%);
   }
 `;
- 
- 
-// Links Container (adjust for horizontal layout and mobile dropdown)
+
+// Container for navigation links (horizontal or dropdown)
 const LinksContainer = styled.div`
   display: flex; // Horizontal layout for links
   align-items: center;
@@ -63,8 +69,8 @@ const LinksContainer = styled.div`
     border-top: 1px solid rgba(255, 255, 255, 0.1); // Separator line - white
   }
 `;
- 
-// Navigation Links
+
+// Individual navigation link styling
 const StyledLink = styled(Link)`
   color: #fff; /* White text */
   text-decoration: none;
@@ -92,9 +98,8 @@ const StyledLink = styled(Link)`
  
   /* &.active { ... } */ // Optional active styling
 `;
- 
- 
-// Hamburger Icon (Position adjusted for top right)
+
+// Hamburger menu icon for mobile
 const MenuIcon = styled.button`
   display: none;
   background: none;
@@ -118,33 +123,37 @@ const MenuIcon = styled.button`
     margin-left: auto;   /* 🆕 pushes icon all the way to the right */
   }
 `;
- 
- 
+
 // --- Component ---
+// Main navigation bar component
 const NavBar = () => {
+  // State to track if mobile menu is open
   const [isOpen, setIsOpen] = useState(false);
- 
+
+  // Toggle mobile menu open/close
   const toggleMenu = () => setIsOpen(!isOpen);
+  // Close menu (used when clicking a link)
   const closeMenu = () => setIsOpen(false);
- 
+
   return (
     <Nav>
-      <LogoTitle to="/" onClick={closeMenu}>moveduck.</LogoTitle> {/* Added Logo/Title */}
+      {/* Logo/title, always links to home */}
+      <LogoTitle to="/" onClick={closeMenu}>moveduck.</LogoTitle>
+      {/* Hamburger icon for mobile */}
       <MenuIcon onClick={toggleMenu} aria-label="Toggle menu">
         <span />
         <span />
         <span />
       </MenuIcon>
+      {/* Navigation links (horizontal or dropdown) */}
       <LinksContainer isOpen={isOpen}>
         <StyledLink to="/" onClick={closeMenu}>Home</StyledLink>
         <StyledLink to="/about" onClick={closeMenu}>About Us</StyledLink>
         <StyledLink to="/learnmore" onClick={closeMenu}>Learn More</StyledLink>
         <StyledLink to="/newsletter" onClick={closeMenu}>Newsletter</StyledLink>
-
- 
       </LinksContainer>
     </Nav>
   );
 };
- 
+
 export default NavBar;

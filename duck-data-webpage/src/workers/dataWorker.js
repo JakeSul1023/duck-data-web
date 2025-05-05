@@ -1,3 +1,10 @@
+/*
+  Author: Jacob Sullivan
+  Date: 2025-05-04
+  Descritpion: This file contains a web worker for processing duck migration data in Apache Arrow format.
+  It handles loading the data, extracting relevant fields, and organizing it into structured objects for further use.
+*/
+
 /* eslint-disable no-restricted-globals */
 
 import * as arrow from "apache-arrow";
