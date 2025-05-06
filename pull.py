@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-"""
-Download Movebank data for the window
-    [one calendar month before the current ISO week]
-        → [one calendar month after the current ISO week]
-for the current year + N prior years, **mallards only**,
-and combine everything into a single CSV per study.
-
-Environment:
-    export MOVEBANK_USER="Team7Waterfowl"
-    export MOVEBANK_PASS="WingWatch007"
-
-Dependencies:
-    pip install requests python-dateutil pandas
-"""
 
 import os
 import time
@@ -45,8 +31,8 @@ def db_download(study_id: int,
                 end_ts: str,
                 max_retries: int = 3):
 
-    USERNAME = os.getenv("MOVEBANK_USER", "Team7Waterfowl")
-    PASSWORD = os.getenv("MOVEBANK_PASS", "WingWatch007")
+    USERNAME = os.getenv("MOVEBANK_USER")
+    PASSWORD = os.getenv("MOVEBANK_PASS")
 
     url = "https://www.movebank.org/movebank/service/direct-read"
     params = {
