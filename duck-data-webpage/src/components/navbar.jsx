@@ -153,7 +153,6 @@ const NavBar = () => {
         <StyledLink to="/" onClick={closeMenu}>Home</StyledLink>
         <StyledLink to="/about" onClick={closeMenu}>About Us</StyledLink>
         <StyledLink to="/learnmore" onClick={closeMenu}>Learn More</StyledLink>
-        <StyledLink to="/newsletter" onClick={closeMenu}>Newsletter</StyledLink>
       </LinksContainer>
     </Nav>
   );
