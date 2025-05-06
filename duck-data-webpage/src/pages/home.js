@@ -63,8 +63,8 @@ function Home() {
 
       <section className="about-project-section">
         <div className="about-project-content">
-          <h2>About Our Project</h2>
-          <p>Learn more about our mission to track and study duck migration. </p>
+          <h2></h2>
+          <p> </p>
         </div>
       </section>
     </div>
