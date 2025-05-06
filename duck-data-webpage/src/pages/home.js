@@ -35,10 +35,7 @@ function Home() {
     <div className="home-container">
       <section className="nws-info-bar">
         <div className="nws-info-content">
-          <p>
-            Current Time: {formattedDate} {formattedTime}
-          </p>
-        </div>
+      </div>
       </section>
 
       <div className="home-header">
@@ -55,16 +52,12 @@ function Home() {
             Observe duck migration patterns across Mississippi Flyway. Use the map
             below to explore!
           </p>
+          <p>
+            Current Time: {formattedDate} {formattedTime}
+          </p>
           <div className="map-frame">
             <DuckMapFunction />
           </div>
-        </div>
-      </section>
-
-      <section className="about-project-section">
-        <div className="about-project-content">
-          <h2></h2>
-          <p> </p>
         </div>
       </section>
     </div>
