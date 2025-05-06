@@ -213,7 +213,7 @@ export default function DuckMapFunction() {
           const next6Idx = (current6Idx + 1) % filtered6HourIdxs.length;
           return filtered6HourIdxs[next6Idx];
         });
-      }, 100);
+      }, 200);
     }
     return () => timer && clearTimeout(timer);
   }, [play, filtered6HourIdxs, idx]);
@@ -228,6 +228,15 @@ export default function DuckMapFunction() {
       setIdx(0);
     }
   }, [filteredHours, idx]);
+
+  // Keep idx in sync with filtered6HourIdxs
+  useEffect(() => {
+    if (!filtered6HourIdxs.length) {
+      setIdx(0);
+    } else if (!filtered6HourIdxs.includes(idx)) {
+      setIdx(filtered6HourIdxs[0]);
+    }
+  }, [filtered6HourIdxs, idx]);
 
   // Calculate average migration vector for all ducks
   const avgVector = useMemo(() => {
