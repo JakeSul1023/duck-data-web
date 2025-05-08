@@ -1,0 +1,26 @@
+{
+  "files": {
+    "main.css": "/static/css/main.0659957c.css",
+    "main.js": "/static/js/main.727ebbb7.js",
+    "static/js/183.8e83abe8.chunk.js": "/static/js/183.8e83abe8.chunk.js",
+    "static/js/206.530b5a95.chunk.js": "/static/js/206.530b5a95.chunk.js",
+    "static/js/710.ccdda817.chunk.js": "/static/js/710.ccdda817.chunk.js",
+    "static/media/RevelE_Headshot.jpg": "/static/media/RevelE_Headshot.ba65d0194571106fe577.jpg",
+    "static/media/Jacob.jpg": "/static/media/Jacob.44f864e1546a1e43371c.jpg",
+    "static/media/IMG_0051.jpg": "/static/media/IMG_0051.21a946881320829104aa.jpg",
+    "static/media/IMG_8756.jpeg": "/static/media/IMG_8756.2969c4bac8e09075941a.jpeg",
+    "static/media/IMG_8297.jpg": "/static/media/IMG_8297.e9ae3999ee89e23b5c87.jpg",
+    "static/media/IMG_0775.jpg": "/static/media/IMG_0775.b402a99e92d5ffa62152.jpg",
+    "static/media/flyways.png": "/static/media/flyways.5c526f941d76fde87d50.png",
+    "static/media/Bradley-Cohen.jpg": "/static/media/Bradley-Cohen.1a15aa5e046e8a9a6c98.jpg",
+    "static/media/modeloverview.png": "/static/media/modeloverview.bddbd3e85302cdd4cbd4.png",
+    "static/media/moveduck.png": "/static/media/moveduck.09ef3f20c303247d2c96.png",
+    "static/media/Figure_1.png": "/static/media/Figure_1.8fa8253ee21efc77881d.png",
+    "static/media/Figure_3.png": "/static/media/Figure_3.e756e2911840e3989dd1.png",
+    "index.html": "/index.html"
+  },
+  "entrypoints": [
+    "static/css/main.0659957c.css",
+    "static/js/main.727ebbb7.js"
+  ]
+}
