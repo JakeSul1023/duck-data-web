@@ -395,7 +395,7 @@ export default function DuckMapFunction() {
     ];
 
     const colorRange = isMobile ? MOBILE_BLUE_SOFT : DESKTOP_BLUE;
-    const heatRadius = isMobile ? 220 : 270;
+    const heatRadius = isMobile ? 200 : 200;
 
     // Single movement heatmap
     const movementHeatmap = new HeatmapLayer({
